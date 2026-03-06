@@ -4,8 +4,8 @@ import React, { useState, useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { ThemedInput } from "@/components/ui/ThemedInput";
-import CategoryTable from "@/components/dashboard/category/categoryTable";
-import CategoryForm from "@/components/dashboard/category/categoryForm";
+import CategoryTable from "@/components/dashboard/b/categoryTable";
+import CategoryForm from "@/components/dashboard/b/categoryForm";
 
 const initialCategories = [
   { id: 1, name: "Antibiotics", status: "active" },

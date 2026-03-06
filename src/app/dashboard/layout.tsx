@@ -123,9 +123,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   // ── Menu items ────────────────────────────────────────────────────────────
   const menuItems = [
-    { icon: Building2, label: "company",    href: "/dashboard/company" },
-    { icon: LayoutDashboard, label: "category", href: "/dashboard/category" },
-    { icon: LayoutDashboard, label: "text 3",     href: "/#" },
+     { icon: LayoutDashboard, label: "Dashboard ",     href: "/#" },
+    { icon: Building2, label: "a",    href: "/dashboard/a" },
+    { icon: LayoutDashboard, label: "b", href: "/dashboard/#" },
+    
     
   ];
 
@@ -195,7 +196,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               style={getSidebarInlineStyle()}
             >
               <div className={`h-14 flex items-center px-4 gap-3 border-b ${isDarkSidebar ? "border-white/10" : "border-gray-100"}`}>
-                <span className="text-sm font-bold text-white tracking-wide">Pharmacy</span>
+                <span className="text-sm font-bold text-white tracking-wide">Dasboard</span>
               </div>
               <nav className="flex-1 py-3 overflow-y-auto">
                 {menuItems.map((item) => {
@@ -227,7 +228,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               ))}
             </div>
             {showLabels && (
-              <span className="text-base font-bold text-white tracking-wide">Pharmacy</span>
+              <span className="text-base font-bold text-white tracking-wide">Dashboard</span>
             )}
             {sidebarSize === "fullscreen" && (
               <button onClick={() => setSidebarSize("default")} className="ml-auto text-white/60 hover:text-white">

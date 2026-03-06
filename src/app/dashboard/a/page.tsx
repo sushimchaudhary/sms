@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import CompanyTable from "@/components/dashboard/company/companyTable";
-import CompanyForm from "@/components/dashboard/company/companyForm";
+import CompanyTable from "@/components/dashboard/a/companyTable";
+import CompanyForm from "@/components/dashboard/a/companyForm";
 import { ThemedButton } from "@/components/ui/themedButton";
 
 export default function CompanyPage() {

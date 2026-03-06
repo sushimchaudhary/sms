@@ -16,21 +16,14 @@ const CompanyTable = () => {
   // Sample JSON data
   const companys = [
     {
-      id: "ORG-001",
-      name: "MediCare Pharma",
-      email: "contact@medicare.com",
+      id: "#1",
+      name: "text",
+      email: "text@gmail.com",
       address: "New Road, Kathmandu",
       phone: "+977-9800000000",
       pan: "601234567",
     },
-    {
-      id: "ORG-002",
-      name: "LifeLine Wellness",
-      email: "info@lifeline.com",
-      address: "Patan, Lalitpur",
-      phone: "+977-9811111111",
-      pan: "609876543",
-    },
+    
   ];
 
   return (

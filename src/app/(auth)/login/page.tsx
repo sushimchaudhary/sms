@@ -154,7 +154,7 @@ const onSubmit = async (data: any) => {
               Welcome Back
             </h1>
             <p className="text-[12px] text-[#64748b] mt-1 font-medium">
-              Please enter your credentials to access your pharmacy dashboard.
+              Please enter your credentials to access your SMS dashboard.
             </p>
           </div>
 

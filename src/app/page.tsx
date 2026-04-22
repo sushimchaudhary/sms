@@ -1,13 +1,13 @@
-import Image from "next/image";
-import DashboardLayout from "./dashboard/layout";
-import Dashboard from "./dashboard/page";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
-export default function Home() {
-  return (
-    <>
-      <DashboardLayout>
-        <Dashboard />
-      </DashboardLayout>
-    </>
-  );
+export default async function Home() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+
+  if (token) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
 }

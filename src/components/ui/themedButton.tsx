@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/lib/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
 interface ThemedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,7 +19,7 @@ export function ThemedButton({
 }: ThemedButtonProps) {
   const { primaryColor } = useTheme();
 
-  const baseStyles = 'font-medium  transition-all rounded flex items-center justify-center gap-2   focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'font-medium  transition-all rounded flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const sizeStyles = {
     sm: 'px-3 py-1 text-xs',

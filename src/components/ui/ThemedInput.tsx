@@ -1,7 +1,7 @@
 "use client";
 
 import React, { forwardRef } from 'react';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/lib/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
 interface ThemedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {

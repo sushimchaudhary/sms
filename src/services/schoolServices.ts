@@ -49,7 +49,7 @@ export const SchoolServices = {
   },
 
   updateDetails: async (id: string, data: FormData) => {
-    const res = await axiosInstance.put(`/school/schools/${id}/`, data); 
+    const res = await axiosInstance.patch(`/school/schools/${id}/`, data); 
     schoolCache = null;
     return res.data;
   },

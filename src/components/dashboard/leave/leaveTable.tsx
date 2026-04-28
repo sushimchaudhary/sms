@@ -26,9 +26,13 @@ import ConfirmModal from "@/components/delete/confirmModel";
 import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { LeaveServices } from "@/services/leaveServices"; // Ensure this service exists
 import { ThemedButton } from "@/components/ui/themedButton";
+import useAuth from "@/lib/hooks/useAuth";
 
 interface Leave {
   id: number;
+  user?: { id: number; name: string };
+  student?: number;
+  teacher?: number; 
   student_name?: string;
   teacher_name?: string;
   leave_type: string;
@@ -63,18 +67,45 @@ const LeaveTable = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const fetchLeaves = async () => {
-    try {
-      setLoading(true);
-      const res = await LeaveServices.getAllLeaves();
-      const allData = Array.isArray(res) ? res : res?.results || res?.data || [];
-      setList([...allData].reverse());
-    } catch (error) {
-      toast.error("Failed to load leave requests");
-    } finally {
-      setLoading(false);
+  // Table को माथि useAuth इम्पोर्ट र डिक्लेयर गर्नुहोस्
+const { loggedInUser } = useAuth(); 
+
+const fetchLeaves = async () => {
+  try {
+    setLoading(true);
+    const res = await LeaveServices.getAllLeaves();
+    const allData = Array.isArray(res) ? res : res?.results || res?.data || [];
+    
+    // --- Role Based Filtering Logic ---
+    let filteredByRole = [...allData];
+
+    if (loggedInUser?.role === "admin" || loggedInUser?.role === "superadmin") {
+      // Admin ले सबैको (Teacher, Student, Staff) देख्न पाउँछ
+      filteredByRole = allData;
+    } 
+    else if (loggedInUser?.role === "teacher") {
+      // Teacher ले आफ्नो र Student हरूको मात्र देख्न पाउँछ
+      filteredByRole = allData.filter((item: Leave) => 
+        item.teacher_name || item.student_name // यदि staff को पनि छ भने staff बाहेक अरु फिल्टर गर्ने
+      );
+    } 
+    else if (loggedInUser?.role === "student") {
+      // Student ले आफ्नो मात्र देख्न पाउँछ (यहाँ unique ID match गराउनुपर्छ)
+      // नोट: backend बाट आउने data मा user_id वा student_id हुनुपर्छ
+      filteredByRole = allData.filter((item: Leave) => 
+        item.student === loggedInUser?._id || item.user?.id === loggedInUser?._id
+      );
     }
-  };
+
+    setList(filteredByRole.reverse());
+    // ----------------------------------
+    
+  } catch (error) {
+    toast.error("Failed to load leave requests");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchLeaves();

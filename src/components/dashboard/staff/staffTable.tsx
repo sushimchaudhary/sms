@@ -14,6 +14,7 @@ import {
   SearchX,
   Briefcase,
   Fingerprint,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -23,6 +24,7 @@ import { StaffServices } from "@/services/staffServices";
 import { SchoolServices } from "@/services/schoolServices";
 import ConfirmModal from "../../delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
+import Avatar from "antd/es/avatar/Avatar";
 
 interface Staff {
   _id: string | number;
@@ -36,7 +38,8 @@ interface Staff {
   user_email?: string;
   school: any;
   designation: string;
-  code: string;
+  code: string;photo?: string | null;      
+  photo_url?: string | null;
 }
 
 interface StaffTableProps {
@@ -289,6 +292,7 @@ const StaffTable = ({
                 paginatedItems.map((item, index) => {
                   const itemId = (item._id || item.id)!;
                   const isSelected = selectedIds.includes(itemId);
+                  const staffPhoto = item.photo_url || item.photo;
                   return (
                     <tr key={itemId} className={`hover:bg-gray-50 transition-colors ${isSelected ? "bg-blue-50/40" : ""}`}>
                       <td className="px-4 py-1">
@@ -301,6 +305,16 @@ const StaffTable = ({
                       </td>
                       <td className="px-6 py-1 text-[10px] text-[#526484]">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                       <td className="px-6 py-1">
+                        <div className="flex items-center gap-3">
+                          {/* Photo Preview Added Here */}
+                          <div className="relative">
+                             <Avatar 
+                                src={staffPhoto} 
+                                icon={!staffPhoto && <User size={14} />} 
+                                size={32} 
+                                className="border border-gray-100 shadow-sm shrink-0"
+                             />
+                          </div> 
                         <div className="flex flex-col">
                           <span className="text-[11px] text-[#364a63] font-bold uppercase">
                             {item.user?.full_name || item.full_name || "Unknown"}
@@ -308,6 +322,7 @@ const StaffTable = ({
                           <span className="text-[10px] text-[#8094ae] flex items-center gap-1">
                             <Mail size={10} /> {item.user?.email || item.user_email || "N/A"}
                           </span>
+                        </div>
                         </div>
                       </td>
                       <td className="px-6 py-1">

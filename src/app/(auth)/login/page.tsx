@@ -55,27 +55,18 @@ const onSubmit = async (data: any) => {
       password: data.password,
     });
 
-    // 🔴 LOGS BATA DEKHIYEKKO DATA EXTRACTION:
-    // Backend le data direct 'response.data' ma pathairako chha
     const apiResponse = response.data;
-
-    // Backend ma key 'access' chha, 'token' hoina
     const token = apiResponse.access; 
     const userData = apiResponse.user;
-
-    // Debugging ko lagi (pachhi hatauda hunchha)
-    console.log("Token received:", token);
-    console.log("User received:", userData);
 
     if (!token) {
       throw new Error("Access token missing from backend response");
     }
 
-    // 3. Axios Header Update (Immediate use ko lagi)
+    // 3. Axios Header Update
     axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-    // 4. Cookies set garne (Server Action call)
-    // Yasle 'auth_token' ra 'user_info' cookie ma save garchha
+    // 4. Cookies set garne
     await setAuthCookies(token, userData, data.remember);
 
     if (getLoggedInUser) {
@@ -86,10 +77,27 @@ const onSubmit = async (data: any) => {
       description: `Logged in as ${userData.email}`,
     });
 
-    // 5. Redirect
-    router.push("/dashboard");
-    router.refresh();
+    // --- 5. ROLE BASED REDIRECT LOGIC ---
+    const userRole = userData.role?.toLowerCase(); // Case-sensitive huna sakne vayera lowerCase gareko
 
+    if (userRole === "super admin" || userRole === "admin") {
+      router.push("/dashboard");
+    } else if (userRole === "staff") {
+      router.push("/staff-dashboard");
+    } else if (userRole === "student") {
+      router.push("/student-dashboard");
+    } else if (userRole === "teacher") {
+      router.push("/teacher-dashboard");
+    } else if (userRole === "parent"){
+      router.push("/parent-dashboard");
+    } else {
+      toast.error(<strong>Unknown user role!</strong>, {
+        description: "Please contact support for superadmin or admin.",
+      }); 
+    }
+
+
+    router.refresh();
   } catch (exception: any) {
   console.error("Login Error:", exception);
 

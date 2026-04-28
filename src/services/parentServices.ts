@@ -3,6 +3,9 @@ import axiosInstance from "@/lib/config/axios.config";
 let parentCache: any = null;
 let parentRequestHandle: Promise<any> | null = null;
 
+let parentDashboardCache: any = null;
+let parentDashboardRequestHandle: Promise<any> | null = null;
+
 export const ParentServices = {
   clearCache: () => {
     parentCache = null;
@@ -31,6 +34,28 @@ export const ParentServices = {
 
     return parentRequestHandle;
   },
+
+
+  getParentDashboard: async () => {
+    if (parentDashboardCache) return parentDashboardCache;
+
+    if (parentDashboardRequestHandle) return parentDashboardRequestHandle;
+
+    parentDashboardRequestHandle = (async () => {
+      try {
+        const res = await axiosInstance.get("/profile/parents/my_dashboard/");
+        parentDashboardCache = res.data;
+        return res.data;
+      } catch (error) {
+        throw error;
+      } finally {
+        parentDashboardRequestHandle = null;
+      }
+    })();
+
+    return parentDashboardRequestHandle;
+  },
+
 
   createParent: async (data: any) => {
     const res = await axiosInstance.post("/profile/parents/", data);

@@ -26,7 +26,7 @@ export interface IUser {
   username: string;
   id: string | number;
   _id: string | number;
-  
+  created_at?: string | Date;
   // School & Session Info
   schoolName?: string;   
   school_name?: string; 
@@ -64,7 +64,8 @@ export interface IUser {
     id: string | number;
     designation: string;
   };
-
+  photo?: string;
+  profile_photo?: string;
   image: {
     id: string, 
     url: string,

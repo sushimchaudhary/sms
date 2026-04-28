@@ -13,6 +13,7 @@ import {
   Download,
   Printer,
   Fingerprint,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -22,6 +23,7 @@ import { StudentServices } from "@/services/studentServices";
 import { SchoolServices } from "@/services/schoolServices";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
+import Avatar from "antd/es/avatar/Avatar";
 
 interface Student {
   id: string | number;
@@ -39,7 +41,11 @@ interface Student {
     parent_id: string;
     email: string;
     name: string;
+     photo?: string | null;      
+     photo_url?: string | null;
   };
+   photo?: string | null;      
+  photo_url?: string | null;
 }
 
 interface StudentsTableProps {
@@ -348,6 +354,16 @@ const StudentsTable = ({
                       </td>
 
                       <td className="px-6 py-1">
+                                                <div className="flex items-center gap-3">
+                                                  {/* Photo Preview Added Here */}
+                                                  <div className="relative">
+                                                     <Avatar 
+                                                         src={item.photo_url || item.photo}  
+                                                         icon={!item.photo_url && !item.photo && <User size={14} />} 
+                                                        size={32} 
+                                                        className="border border-gray-100 shadow-sm shrink-0"
+                                                     />
+                                                  </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] text-[#364a63] font-bold uppercase">
                             {item.first_name_display} {item.last_name_display}
@@ -355,6 +371,7 @@ const StudentsTable = ({
                           <span className="text-[10px] text-[#8094ae] flex items-center gap-1">
                             <Mail size={10} /> {item.user_email || "N/A"}
                           </span>
+                        </div>
                         </div>
                       </td>
                       <td className="px-6 py-1">

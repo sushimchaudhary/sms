@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   User,
@@ -13,13 +13,15 @@ import {
   UserCircle,
   Eye,
   EyeOff,
+  Camera,
+  
 } from "lucide-react";
 import { Form, FormItem, FormMessage } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { toast } from "sonner";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Avatar } from "antd";
 import { CancelButton } from "@/components/ui/CancleButton";
 import { TeacherServices } from "@/services/teacherServices";
 import useAuth from "@/lib/hooks/useAuth";
@@ -32,6 +34,7 @@ interface TeacherFormValues {
   qualification: string;
   password?: string;
   school_id: string | number;
+  photo?: any;
 }
 
 export default function TeacherForm({
@@ -44,6 +47,8 @@ export default function TeacherForm({
   const { primaryColor } = useTheme();
   const { loggedInUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<TeacherFormValues>({
     defaultValues: {
@@ -53,11 +58,13 @@ export default function TeacherForm({
       qualification: "",
       password: "",
       school_id: "",
+      photo: null,
     },
   });
 
   const handleClose = () => {
     form.reset();
+    setPhotoPreview(null);
     onClose();
   };
 
@@ -69,11 +76,13 @@ export default function TeacherForm({
       const currentSchoolId =
         initialData?.school?.id ||
         initialData?.school ||
+        initialData?.school_id ||
         loggedInUser?.school_id ||
         loggedInUser?.school ||
         cookieUser?.school_id;
 
       if (initialData) {
+        setPhotoPreview(initialData.photo_url || initialData.photo || null);
         form.reset({
           email: initialData.user_email || initialData.user?.email || "",
           first_name: initialData.user?.first_name || initialData.first_name_display || "",
@@ -83,6 +92,7 @@ export default function TeacherForm({
           password: "",
         });
       } else {
+        setPhotoPreview(null);
         form.reset({
           email: "",
           first_name: "",
@@ -95,62 +105,81 @@ export default function TeacherForm({
     }
   }, [initialData, isOpen, loggedInUser, form]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB");
+      return;
+    }
+
+    form.setValue("photo", file); 
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
   const onSubmit = async (values: TeacherFormValues) => {
-    setLoading(true);
-    try {
-      const payload: any = {
-        email: values.email,
-        first_name: values.first_name,
-        last_name: values.last_name,
-        qualification: values.qualification,
-        school: values.school_id,
-      };
+ setLoading(true);
+  try {
+    const formData = new FormData();
+    
+    formData.append("email", values.email);
+    formData.append("first_name", values.first_name);
+    formData.append("last_name", values.last_name);
+    formData.append("qualification", values.qualification);
+    
+    
+    if (values.school_id) {
+      formData.append("school", String(values.school_id));
+    }
 
-      if (values.password && values.password.trim() !== "") {
-        payload.password = values.password;
-      }
+    if (values.photo && values.photo instanceof File) {
+      formData.append("photo", values.photo);
+    }
 
-      if (isUpdate) {
-        const teacherId = initialData.id || initialData._id;
-        await TeacherServices.updateTeacher(teacherId, payload);
-        toast.success("Teacher updated successfully");
-      } else {
-        if (!values.password) {
-          toast.error("Password is required");
-          setLoading(false);
-          return;
-        }
-        await TeacherServices.createTeacher(payload);
-        toast.success("Teacher registered successfully");
+    if (values.password && values.password.trim() !== "") {
+      formData.append("password", values.password);
+    }
+
+    if (isUpdate) {
+      const teacherId = initialData.id || initialData._id;
+      await TeacherServices.updateTeacher(teacherId, formData);
+      toast.success("Teacher updated successfully");
+    } else {
+      if (!values.password) {
+        toast.error("Password is required");
+        setLoading(false);
+        return;
       }
-      onSuccess();
-      handleClose();
+      await TeacherServices.createTeacher(formData);
+      toast.success("Teacher registered successfully");
+    }
+    
+    onSuccess();
+    handleClose();
     } catch (err: any) {
       const serverErrors = err.response?.data;
-
       if (serverErrors) {
         if (typeof serverErrors === "object" && !serverErrors.detail) {
           Object.keys(serverErrors).forEach((key) => {
             const errorValue = serverErrors[key];
-            
             const message = Array.isArray(errorValue) ? errorValue[0] : errorValue;
-
             const fieldName = key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
-            
             toast.error(`${fieldName}: ${message}`);
           });
-        } 
-        else if (serverErrors.detail) {
+        } else if (serverErrors.detail) {
           toast.error(serverErrors.detail);
-        } 
-        else {
+        } else {
           toast.error("An error occurred on the server.");
         }
       } else {
         toast.error("Network error. Please check your connection.");
       }
-
-      // console.error("Teacher submission error:", err);
     } finally {
       setLoading(false);
     }
@@ -174,6 +203,35 @@ export default function TeacherForm({
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
+                
+                {/* Photo Upload Section */}
+                <div className="flex flex-col items-center justify-center pb-4 border-b border-dashed border-gray-200">
+                  <div className="relative group">
+                    <div 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 transition-all group-hover:border-primary cursor-pointer hover:bg-gray-100"
+                      style={{ borderColor: photoPreview ? primaryColor : '#e5e7eb' }}
+                    >
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera size={30} className="text-gray-300" />
+                      )}
+                    </div>
+                
+                   
+                
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2">Upload Profile Photo (Max 2MB)</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldControl form={form} name="first_name" label="First Name" icon={<User size={12} />} placeholder="Enter first name" />
                   <FormFieldControl form={form} name="last_name" label="Last Name" icon={<User size={12} />} placeholder="Enter last name" />

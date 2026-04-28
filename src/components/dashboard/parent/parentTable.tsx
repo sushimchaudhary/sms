@@ -14,6 +14,7 @@ import {
   Printer,
   Fingerprint,
   Baby,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -23,6 +24,7 @@ import { ParentServices } from "@/services/parentServices";
 import { SchoolServices } from "@/services/schoolServices";
 import ConfirmModal from "../../delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
+import Avatar from "antd/es/avatar/Avatar";
 
 interface Parent {
   _id: string | number;
@@ -33,6 +35,8 @@ interface Parent {
   children: any[];
   parent_id: string;
   school: any;
+  photo?: string | null;      
+  photo_url?: string | null;
 }
 
 interface ParentTableProps {
@@ -295,6 +299,16 @@ const ParentTable = ({
                       </td>
                       <td className="px-6 py-1 text-[10px] text-[#526484]">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                       <td className="px-6 py-1">
+                       <div className="flex items-center gap-3">
+                          {/* Photo Preview Added Here */}
+                          <div className="relative">
+                             <Avatar 
+                                src={item.photo_url || item.photo} 
+                                icon={!item.photo_url && !item.photo && <User size={14} />} 
+                                size={32} 
+                                className="border border-gray-100 shadow-sm shrink-0"
+                             />
+                          </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] text-[#364a63] font-bold uppercase">
                             {item.first_name_display} {item.last_name_display || ""}
@@ -302,6 +316,7 @@ const ParentTable = ({
                           <span className="text-[10px] text-[#8094ae] flex items-center gap-1">
                             <Mail size={10} /> {item.user_email || "N/A"}
                           </span>
+                        </div>
                         </div>
                       </td>
                       <td className="px-6 py-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   User,
@@ -14,6 +14,7 @@ import {
   EyeOff,
   Calendar,
   Users,
+  Camera,
 } from "lucide-react";
 import { Form, FormItem, FormMessage } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
@@ -37,6 +38,7 @@ interface StudentFormValues {
   parent: string | number | null;
   dob: any;
   gender: string | null;
+  photo?: any;
 }
 
 export default function StudentForm({
@@ -50,6 +52,8 @@ export default function StudentForm({
   const { loggedInUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [parents, setParents] = useState([]);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<StudentFormValues>({
     defaultValues: {
@@ -61,6 +65,7 @@ export default function StudentForm({
       parent: null,
       dob: null,
       gender: null,
+      photo: null,
     },
   });
 
@@ -94,6 +99,8 @@ export default function StudentForm({
         cookieUser?.school_id;
 
       if (initialData) {
+         setPhotoPreview(initialData.photo_url || initialData.photo || null);
+
         form.reset({
           email: initialData.user_email || initialData.user?.email || "",
           first_name:
@@ -110,6 +117,7 @@ export default function StudentForm({
           password: "",
         });
       } else {
+          setPhotoPreview(null);
         form.reset({
           email: "",
           first_name: "",
@@ -124,35 +132,68 @@ export default function StudentForm({
     }
   }, [initialData, isOpen, loggedInUser, form]);
 
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size should be less than 2MB");
+        return;
+      }
+  
+      form.setValue("photo", file); 
+  
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
   const onSubmit = async (values: StudentFormValues) => {
     setLoading(true);
     try {
-      const payload: any = {
-        first_name: values.first_name,
-        last_name: values.last_name,
-        school: values.school_id,
-        parent: values.parent,
-        // Convert dayjs object back to string for backend
-        dob: values.dob ? values.dob.format("YYYY-MM-DD") : null,
-        gender: values.gender,
-      };
+      const formData = new FormData();
 
+      // १. इमेल थप्नुहोस् (यो छुटेको थियो)
+      formData.append("email", values.email || "");
+      
+      formData.append("first_name", values.first_name || "");
+      formData.append("last_name", values.last_name || "");
+      
+      if (values.parent) {
+        formData.append("parent", String(values.parent));
+      }
+
+      formData.append("dob", values.dob ? values.dob.format("YYYY-MM-DD") : "");
+      formData.append("gender", values.gender || "");
+
+      if (values.school_id) {
+        formData.append("school", String(values.school_id));
+      }
+
+      if (values.photo && values.photo instanceof File) {
+        formData.append("photo", values.photo);
+      }
+
+      // २. पासवर्ड चेक (Update मा नहुन सक्छ, तर New Registration मा अनिवार्य छ)
       if (values.password && values.password.trim() !== "") {
-        payload.password = values.password;
+        formData.append("password", values.password);
       }
 
       if (isUpdate) {
         const studentId = initialData.id || initialData._id;
-        await StudentServices.updateStudent(studentId, payload);
+        await StudentServices.updateStudent(studentId, formData);
         toast.success("Student updated successfully");
       } else {
-        payload.email = values.email;
         if (!values.password) {
           toast.error("Password is required");
           setLoading(false);
           return;
         }
-        await StudentServices.createStudent(payload);
+        await StudentServices.createStudent(formData);
         toast.success("Student registered successfully");
       }
       onSuccess();
@@ -235,6 +276,34 @@ export default function StudentForm({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="px-6 py-5 space-y-4"
               >
+
+                <div className="flex flex-col items-center justify-center pb-4 border-b border-dashed border-gray-200">
+                  <div className="relative group">
+                    <div 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 transition-all group-hover:border-primary cursor-pointer hover:bg-gray-100"
+                      style={{ borderColor: photoPreview ? primaryColor : '#e5e7eb' }}
+                    >
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera size={30} className="text-gray-300" />
+                      )}
+                    </div>
+                
+                   
+                
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2">Upload Profile Photo (Max 2MB)</p>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldControl
                     form={form}

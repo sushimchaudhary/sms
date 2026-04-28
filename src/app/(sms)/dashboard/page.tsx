@@ -154,13 +154,13 @@ function TopStatCard({ label, value, icon: Icon, bg, href, loading }: {
   return (
     <a
       href={href}
-      className="relative bg-white rounded border border-gray-100 p-2 flex items-center gap-4 overflow-hidden group hover:shadow-md  transition-all duration-200 shadow-sm"
+      className="relative bg-white rounded border border-gray-100 p-3 flex items-center gap-4 overflow-hidden group hover:shadow-md hover:hover:-translate-y-0.5  transition-all duration-200 shadow-sm"
     >
       <div
-        className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-200"
+        className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 shadow-md  transition-transform duration-200"
         style={{ background: `linear-gradient(135deg, ${bg}dd, ${bg})` }}
       >
-        <Icon size={20} className="text-white" />
+        <Icon size={18} className="text-white" />
       </div>
       <div className="flex-1 min-w-0">
         {loading ? (
@@ -185,10 +185,10 @@ function MiniStatCard({ label, value, icon: Icon, bg, ic, href, loading }: {
   return (
     <a
       href={href}
-      className="bg-white rounded border border-gray-100 p-2 flex items-center gap-2.5 hover:shadow-md  transition-all duration-200 group shadow-sm"
+      className="bg-white rounded border border-gray-100 p-2 flex items-center gap-2.5 hover:shadow-md hover:hover:-translate-y-0.5 transition-all duration-200 group shadow-sm"
     >
       <div
-        className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 group-hover:scale-115 transition-transform"
+        className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 transition-transform"
         style={{ backgroundColor: bg }}
       >
         <Icon size={15} style={{ color: ic }} />
@@ -486,9 +486,9 @@ export default function DashboardPage() {
         )}
 
         {/* ── Top 4 cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 ">
           {topStats.map(s => <TopStatCard key={s.label} {...s} loading={loading} />)}
-        </div>
+        </div> 
 
         {/* ── Secondary 8 cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">

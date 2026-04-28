@@ -16,7 +16,6 @@ import {
   GraduationCap,
   Users,
   BookOpen,
-  
   UserPlus,
   CalendarClock,
   Users2,
@@ -30,7 +29,6 @@ import {
   Tag,
   Receipt,
   CalendarDays,
-  MessageSquare,
   MessageSquareWarning,
   UserCheck,
   CalendarCheck,
@@ -53,6 +51,16 @@ import useAuth from "@/lib/hooks/useAuth";
 import cookies from "js-cookie";
 import { SchoolServices } from "@/services/schoolServices";
 import { NotificationProvider, useNotifications } from "@/lib/context/NotificationContext";
+import { TeacherServices } from "@/services/teacherServices";
+import { StudentServices } from "@/services/studentServices";
+
+// ── Base URL + resolvePhoto ───────────────────────────────────────────────────
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+function resolvePhoto(photo?: string | null): string {
+  if (!photo) return "";
+  return photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type SubMenuItem = {
@@ -121,109 +129,164 @@ const PRESET_COLORS: Record<string, string> = {
 
 // ── Role-based menu definitions ──────────────────────────────────────────────
 const SUPERADMIN_MENU: MenuItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  // { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: School, label: "School", href: "/school" },
   { icon: User, label: "User", href: "/user-management" },
 ];
 
 const SCHOOL_ADMIN_MENU: MenuItem[] = [
-{ 
-    icon: LayoutDashboard, 
-    label: "Dashboard", 
-    href: "/dashboard" 
-  },
-
-  { 
-    icon: LayoutDashboard, 
-    label: "Dashboard", 
-    href: "/teacher-dashboard" 
-  },
-  { 
-    icon: CalendarClock, 
-    label: "Academic Session", 
-    href: "/sessions" 
-  },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  { icon: CalendarClock, label: "Academic Session", href: "/sessions" },
   {
     icon: Users2,
     label: "User Management",
     href: "/school",
     submenu: [
       { label: "Teachers", href: "/teacher", icon: GraduationCap },
-      { label: "Staff Members", href: "/staff", icon: ShieldCheck }, 
+      { label: "Staff Members", href: "/staff", icon: ShieldCheck },
       { label: "Parents", href: "/parent", icon: Users },
       { label: "Students", href: "/student", icon: BookOpen },
     ],
   },
-  { 
-    icon: GraduationCap, // Icon change gareko matching label ko lagi
-    label: "Academics", 
-    href: "#", // Parent link click garna nahoos bhanera # rakheko
+  {
+    icon: GraduationCap,
+    label: "Academics",
+    href: "#",
     submenu: [
       { label: "Class", href: "/class", icon: Layers },
       { label: "Section", href: "/section", icon: LayoutGrid },
       { label: "Subject", href: "/subject", icon: BookMarked },
       { label: "Teacher Assignment", href: "/teacher-subject", icon: ClipboardCheck },
-    ]
+    ],
   },
-  { 
-    icon: UserPlus, 
-    label: "Admissions", 
-    href: "/student-enrollment" 
-  },
-  { 
-    icon: WalletCards, 
-    label: "Accounts", 
+  { icon: UserPlus, label: "Admissions", href: "/student-enrollment" },
+  {
+    icon: WalletCards,
+    label: "Accounts",
     href: "#",
     submenu: [
-      { label: "Fee Types", href: "/fee-type", icon: Tag },     
+      { label: "Fee Types", href: "/fee-type", icon: Tag },
       { label: "Fee Structure", href: "/fee-structure", icon: Banknote },
-       { label: "Student Fee ", href: "/student-fee", icon: WalletCards },
-        { label: "Payment Records", href: "/payment-record", icon: ClipboardCheck },
-        { label: "Expense Management", href: "/expense", icon: Receipt },
-    ]
+      { label: "Student Fee", href: "/student-fee", icon: WalletCards },
+      { label: "Payment Records", href: "/payment-record", icon: ClipboardCheck },
+      { label: "Expense Management", href: "/expense", icon: Receipt },
+    ],
   },
-
-  
-  { 
-    icon: BookMarked, 
-    label: "Notes & Homework", 
+  {
+    icon: BookMarked,
+    label: "Notes & Homework",
     href: "#",
     submenu: [
-      { label: "Home Works", href: "/homework", icon: Tag },     
+      { label: "Home Works", href: "/homework", icon: Tag },
       { label: "Notes", href: "/notes", icon: BookOpen },
-    
-    ]
+    ],
   },
-
-    { 
-    icon:CalendarDays , 
-    label: "Leave Application", 
-    href: "/leave-application" 
+  { icon: CalendarDays, label: "Leave Application", href: "/leave-application" },
+  {
+    icon: Bell,
+    label: "Notifications",
+    href: "#",
+    submenu: [
+      { label: "All Notifications", href: "/notification", icon: Bell },
+      { label: "Complaints", href: "/complaint", icon: MessageSquareWarning },
+    ],
   },
-
-  { 
-  icon: Bell, 
-  label: "Notifications", 
-  href: "#",
-  submenu: [
-    { label: "All Notifications", href: "/notification", icon: Bell },     
-    { label: "Complaints", href: "/complaint", icon: MessageSquareWarning },
-  ]
-},
-
- { 
-  icon: CalendarCheck, 
-  label: "Attendance", 
-  href: "#",
-  submenu: [
-    { label: "Staff Attendance", href: "/attendance/staff-attendance", icon: UserCheck },     
-    { label: "Student Attendance", href: "/attendance/student-attendance", icon: GraduationCap },
-  ]
-}
-
-
-  
+  {
+    icon: CalendarCheck,
+    label: "Attendance",
+    href: "#",
+    submenu: [
+      { label: "Staff Attendance", href: "/attendance/staff-attendance", icon: UserCheck },
+      { label: "Student Attendance", href: "/attendance/student-attendance", icon: GraduationCap },
+    ],
+  },
 ];
+
+const TEACHER_MENU: MenuItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/teacher-dashboard" },
+  {
+    icon: CalendarCheck,
+    label: "Attendance",
+    href: "#",
+    submenu: [
+      { label: "Staff Attendance", href: "/attendance/staff-attendance", icon: UserCheck },
+      { label: "Student Attendance", href: "/attendance/student-attendance", icon: GraduationCap },
+    ],
+  },
+  { icon: CalendarDays, label: "Leave Application", href: "/leave-application" },
+  {
+    icon: BookMarked,
+    label: "Notes & Homework",
+    href: "#",
+    submenu: [
+      { label: "Home Works", href: "/homework", icon: Tag },
+      { label: "Notes", href: "/notes", icon: BookOpen },
+    ],
+  },
+  {
+    icon: Bell,
+    label: "Notifications",
+    href: "#",
+    submenu: [
+      { label: "All Notifications", href: "/notification", icon: Bell },
+      { label: "Complaints", href: "/complaint", icon: MessageSquareWarning },
+    ],
+  },
+];
+
+const STUDENT_MENU: MenuItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/student-dashboard" },
+  {
+    icon: BookMarked,
+    label: "Notes & Homework",
+    href: "#",
+    submenu: [
+      { label: "Home Works", href: "/homework", icon: Tag },
+      { label: "Notes", href: "/notes", icon: BookOpen },
+    ],
+  },
+  { icon: CalendarDays, label: "Leave Application", href: "/leave-application" },
+  { icon: MessageSquareWarning, label: "Complaints", href: "/complaint" },
+  { icon: Bell, label: "Notifications", href: "/notification" },
+];
+
+const PARENT_MENU: MenuItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/parent-dashboard" },
+  { icon: MessageSquareWarning, label: "Complaints", href: "/complaint" },
+  { icon: Bell, label: "Notifications", href: "/notification" },
+];
+
+const STAFF_MENU: MenuItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/staff-dashboard" },
+  { icon: CalendarCheck, label: "Attendance", href: "/attendance/staff-attendance" },
+  {
+    icon: WalletCards,
+    label: "Accounts",
+    href: "#",
+    submenu: [
+      { label: "Fee Types", href: "/fee-type", icon: Tag },
+      { label: "Fee Structure", href: "/fee-structure", icon: Banknote },
+      { label: "Student Fee", href: "/student-fee", icon: WalletCards },
+      { label: "Payment Records", href: "/payment-record", icon: ClipboardCheck },
+      { label: "Expense Management", href: "/expense", icon: Receipt },
+    ],
+  },
+  { icon: CalendarDays, label: "Leave Application", href: "/leave-application" },
+  { icon: MessageSquareWarning, label: "Complaints", href: "/complaint" },
+  { icon: Bell, label: "Notifications", href: "/notification" },
+];
+
+function getMenuByRole(role: string | undefined): MenuItem[] {
+  switch (role) {
+    case "superadmin": return SUPERADMIN_MENU;
+    case "admin":      return SCHOOL_ADMIN_MENU;
+    case "teacher":    return TEACHER_MENU;
+    case "student":    return STUDENT_MENU;
+    case "parent":     return PARENT_MENU;
+    case "staff":      return STAFF_MENU;
+    default:           return SCHOOL_ADMIN_MENU;
+  }
+}
 
 // ── Inner component ───────────────────────────────────────────────────────────
 function DashboardInner({ children }: { children: React.ReactNode }) {
@@ -231,15 +294,15 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const { setThemeConfig } = useTheme();
   const { user } = useAuth();
 
-  const role = user?.role; // 'superadmin' | 'admin'
+  const role = user?.role;
 
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-
-  // ── School name state ─────────────────────────────────────────────────────
   const [schoolName, setSchoolName] = useState<string>("");
+  // ✅ NEW: school logo state
+  const [schoolLogo, setSchoolLogo] = useState<string>("");
   const [schoolLoading, setSchoolLoading] = useState(false);
 
   const saved = loadSettings();
@@ -256,10 +319,39 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [customColor, setCustomColor] = useState(saved.customColor);
   const { unreadCount } = useNotifications();
 
+  const [userPhoto, setUserPhoto] = useState<string>("");
 
+  useEffect(() => { setMounted(true); }, []);
+
+  // ── Fetch + resolve user photo based on role ──────────────────────────────
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const fetchUserPhoto = async () => {
+      try {
+        const userInfoCookie = cookies.get("user_info");
+        const cookieUser = userInfoCookie ? JSON.parse(userInfoCookie) : null;
+        const cookiePhoto = cookieUser?.photo || (user as any)?.photo || "";
+
+        if (cookiePhoto) {
+          setUserPhoto(resolvePhoto(cookiePhoto));
+          return;
+        }
+
+        if (role === "teacher") {
+          const dash = await TeacherServices.getTeacherDashboard();
+          setUserPhoto(resolvePhoto(dash?.teacher?.photo));
+        } else if (role === "student") {
+          const dash = await StudentServices.getStudentDashboard();
+          setUserPhoto(resolvePhoto(dash?.student?.photo));
+        }
+      } catch {
+        setUserPhoto("");
+      }
+    };
+
+    if (user) {
+      fetchUserPhoto();
+    }
+  }, [user, role]);
 
   // ── Active color ──────────────────────────────────────────────────────────
   const activeColor =
@@ -274,93 +366,59 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (mounted) {
       saveSettings({
-        skinMode,
-        sidebarStyle,
-        navStyle,
-        primarySkin,
-        uiStyle,
-        direction,
-        layoutMode,
-        topbarColor,
-        menuColor,
-        sidebarSize,
-        customColor,
+        skinMode, sidebarStyle, navStyle, primarySkin, uiStyle,
+        direction, layoutMode, topbarColor, menuColor, sidebarSize, customColor,
       });
     }
-  }, [
-    skinMode,
-    sidebarStyle,
-    navStyle,
-    primarySkin,
-    uiStyle,
-    direction,
-    layoutMode,
-    topbarColor,
-    menuColor,
-    sidebarSize,
-    customColor,
-    mounted,
-  ]);
+  }, [skinMode, sidebarStyle, navStyle, primarySkin, uiStyle, direction,
+      layoutMode, topbarColor, menuColor, sidebarSize, customColor, mounted]);
 
-  // ── Fetch school name (only for non-superadmin) ───────────────────────────
+  // ── Fetch school name + logo ──────────────────────────────────────────────
   useEffect(() => {
-    const fetchSchoolName = async () => {
-      // Cookie बाट user_info पढ्ने
+    const fetchSchoolData = async () => {
       const userInfoCookie = cookies.get("user_info");
-      const cookieUser = userInfoCookie
-        ? JSON.parse(userInfoCookie)
-        : null;
-
-      // school_id: useAuth user वा cookie बाट — जुन पनि उपलब्ध छ
+      const cookieUser = userInfoCookie ? JSON.parse(userInfoCookie) : null;
       const schoolId =
-        user?.school_id ||
-        user?.school ||
-        cookieUser?.school_id ||
-        cookieUser?.school;
+        user?.school_id || user?.school ||
+        cookieUser?.school_id || cookieUser?.school;
 
-      console.log("Resolved School ID:", schoolId);
-      console.log("useAuth user:", user);
-      console.log("Cookie user:", cookieUser);
-
-      if (!schoolId) {
-        console.warn("No school_id found on user");
-        return;
-      }
+      if (!schoolId) return;
 
       try {
         setSchoolLoading(true);
         const res = await SchoolServices.getSingleSchool(schoolId);
+        const data = res?.data || res;
 
-        const name =
-          res?.data?.name ||
-          res?.name ||
-          res?.data?.school_name ||
-          res?.school_name;
-
+        // ✅ Extract school name
+        const name = data?.name || data?.school_name;
         setSchoolName(name || "");
-        console.log("School Name Set:", name);
+
+        // ✅ Extract and resolve school logo
+        // API returns logo_url or logo field — use whichever is present
+        const logoRaw = data?.logo_url || data?.logo || "";
+        setSchoolLogo(resolvePhoto(logoRaw));
+
       } catch (error: any) {
         console.error("School fetch error:", error?.response?.data || error);
         setSchoolName("");
+        setSchoolLogo("");
       } finally {
         setSchoolLoading(false);
       }
     };
 
     if (role && role !== "superadmin") {
-      fetchSchoolName();
+      fetchSchoolData();
     }
-  }, [user?.school_id, user?.school, role]); 
+  }, [user?.school_id, user?.school, role]);
 
   // ── Auto-open submenu if current path matches ─────────────────────────────
   useEffect(() => {
-    const menuItems =
-      role === "superadmin" ? SUPERADMIN_MENU : SCHOOL_ADMIN_MENU;
+    const menuItems = getMenuByRole(role);
     menuItems.forEach((item) => {
       if (item.submenu) {
         const hasActiveChild = item.submenu.some(
-          (sub) =>
-            pathname === sub.href || pathname.startsWith(sub.href + "/")
+          (sub) => pathname === sub.href || pathname.startsWith(sub.href + "/")
         );
         if (hasActiveChild) {
           setOpenSubmenus((prev) => ({ ...prev, [item.label]: true }));
@@ -388,23 +446,30 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     setCustomColor(DEFAULTS.customColor);
   };
 
-  // ── Layout wrapper ────────────────────────────────────────────────────────
   const getLayoutWrapperClass = () => {
     if (layoutMode === "boxed") return "max-w-[1280px] mx-auto shadow-2xl";
     if (layoutMode === "detached") return "max-w-[1400px] mx-auto px-4 pt-3";
     return "";
   };
 
-  // ── Menu items based on role ──────────────────────────────────────────────
-  const menuItems: MenuItem[] =
-    role === "superadmin" ? SUPERADMIN_MENU : SCHOOL_ADMIN_MENU;
+  const menuItems: MenuItem[] = getMenuByRole(role);
 
-  // ── Sidebar helpers ───────────────────────────────────────────────────────
+  const getRoleLabel = (r: string | undefined) => {
+    switch (r) {
+      case "superadmin": return "Super Admin";
+      case "admin":      return "School Admin";
+      case "teacher":    return "Teacher";
+      case "student":    return "Student";
+      case "parent":     return "Parent";
+      case "staff":      return "Staff";
+      default:           return r ?? "";
+    }
+  };
+
   const getSidebarClass = () => {
     if (menuColor === "dark") return "bg-[#1e293b] text-slate-300";
     if (menuColor === "brand") return "text-white";
-    if (sidebarStyle === "white")
-      return "bg-white text-slate-700 border-r border-gray-200";
+    if (sidebarStyle === "white") return "bg-white text-slate-700 border-r border-gray-200";
     if (sidebarStyle === "light") return "bg-[#192a3e] text-slate-300";
     if (sidebarStyle === "dark") return "bg-slate-950 text-slate-300";
     return "text-white";
@@ -416,7 +481,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   };
   const isDarkSidebar = menuColor !== "light" || sidebarStyle !== "white";
 
-  // ── Sidebar size → width ──────────────────────────────────────────────────
   const getSidebarWidth = () => {
     if (!sidebarOpen || sidebarSize === "condensed") return "w-[58px]";
     if (sidebarSize === "hover") return "w-[58px]";
@@ -425,16 +489,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     if (sidebarSize === "fullscreen") return "w-screen";
     return "w-[220px]";
   };
-  const showLabels =
-    sidebarOpen && sidebarSize !== "condensed" && sidebarSize !== "hover";
+  const showLabels = sidebarOpen && sidebarSize !== "condensed" && sidebarSize !== "hover";
 
-  // ── Nav helpers ───────────────────────────────────────────────────────────
   const getNavClass = () => {
-    if (topbarColor === "dark")
-      return "bg-slate-900 text-white border-b border-slate-800";
+    if (topbarColor === "dark") return "bg-slate-900 text-white border-b border-slate-800";
     if (topbarColor === "theme") return "text-white";
-    if (navStyle === "dark")
-      return "bg-slate-900 text-white border-b border-slate-800";
+    if (navStyle === "dark") return "bg-slate-900 text-white border-b border-slate-800";
     return "bg-white border-b border-gray-200 text-slate-700";
   };
   const getNavInlineStyle = () =>
@@ -444,7 +504,44 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     topbarColor === "theme" ||
     (topbarColor === "light" && navStyle === "dark");
 
-  // ── Render nav items ──────────────────────────────────────────────────────
+  // ── Shared school logo component ──────────────────────────────────────────
+  /**
+   * Renders the school logo image if available, otherwise falls back to
+   * the original 2×2 grid of white squares (for superadmin or no-logo schools).
+   */
+  const SchoolLogoOrFallback = ({
+    size = "sm",
+  }: {
+    size?: "sm" | "md";
+  }) => {
+    const dim = size === "md" ? "w-6 h-6" : "w-20 h-20";
+
+    if (schoolLogo) {
+      return (
+        <img
+          src={schoolLogo}
+          alt={schoolName || "School Logo"}
+          className={`${dim} object-contain  flex-shrink-0 rounded-full  bg-white/80 `}
+          onError={(e) => {
+            // On broken image, hide it so the parent can show fallback
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      );
+    }
+
+    // Fallback: original grid squares (superadmin or school with no logo)
+    return (
+      <div className={`${dim} grid grid-cols-2 gap-0.5 flex-shrink-0`}>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white/80 rounded-sm" /> 
+          
+        ))}
+        
+      </div>
+    );
+  };
+
   const renderNavItems = (items: MenuItem[]) =>
     items.map((item) => {
       const isActive =
@@ -475,31 +572,26 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
                   />
                   {showLabels && (
-                    <span
-                      className={`text-sm truncate ${isActive ? "font-semibold text-white" : ""}`}
-                    >
+                    <span className={`text-sm truncate ${isActive ? "font-semibold text-white" : ""}`}>
                       {item.label}
                     </span>
                   )}
                 </div>
                 {showLabels && (
                   <span className="flex-shrink-0">
-                    {isSubmenuOpen ? (
-                      <ChevronDown size={13} className="text-slate-400" />
-                    ) : (
-                      <ChevronRight size={13} className="text-slate-400" />
-                    )}
+                    {isSubmenuOpen
+                      ? <ChevronDown size={13} className="text-slate-400" />
+                      : <ChevronRight size={13} className="text-slate-400" />
+                    }
                   </span>
                 )}
               </div>
 
-              {/* Submenu items */}
               {isSubmenuOpen && showLabels && (
                 <div className="ml-4 mt-0.5 mb-1 flex flex-col gap-0.5">
                   {item.submenu!.map((sub) => {
                     const isSubActive =
-                      pathname === sub.href ||
-                      pathname.startsWith(sub.href + "/");
+                      pathname === sub.href || pathname.startsWith(sub.href + "/");
                     return (
                       <Link href={sub.href} key={sub.label}>
                         <div
@@ -540,9 +632,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
                   />
                   {showLabels && (
-                    <span
-                      className={`text-sm truncate ${isActive ? "font-semibold text-white" : ""}`}
-                    >
+                    <span className={`text-sm truncate ${isActive ? "font-semibold text-white" : ""}`}>
                       {item.label}
                     </span>
                   )}
@@ -558,18 +648,15 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     <div
       dir={direction}
       className={`flex h-screen font-sans overflow-hidden ${
-        skinMode === "dark"
-          ? "bg-slate-950 text-white"
-          : "bg-[#f0f2f5] text-slate-700"
+        skinMode === "dark" ? "bg-slate-950 text-white" : "bg-[#f0f2f5] text-slate-700"
       }`}
     >
       <div className={`flex flex-1 h-full min-w-0 ${getLayoutWrapperClass()}`}>
+
         {/* ── SIDEBAR ── */}
         <aside
           className={`${getSidebarWidth()} flex-shrink-0 transition-all duration-300 flex flex-col z-40 ${getSidebarClass()} ${
-            layoutMode === "detached"
-              ? "rounded-xl mt-[60px] mb-2 ml-0 overflow-hidden"
-              : ""
+            layoutMode === "detached" ? "rounded-xl mt-[60px] mb-2 ml-0 overflow-hidden" : ""
           } ${sidebarSize === "hover" ? "group relative" : ""} ${
             sidebarSize === "fullscreen" ? "absolute inset-0 z-50" : ""
           }`}
@@ -581,11 +668,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               className={`absolute left-full top-0 h-full w-[200px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 flex flex-col ${getSidebarClass()} shadow-xl`}
               style={getSidebarInlineStyle()}
             >
-              <div
-                className={`h-14 flex items-center px-4 gap-3 border-b ${isDarkSidebar ? "border-white/10" : "border-gray-100"}`}
-              >
-                <span className="text-sm font-bold text-white tracking-wide">
-                  Dashboard
+              <div className={`h-14 flex items-center px-4 gap-3 border-b ${isDarkSidebar ? "border-white/10" : "border-gray-100"}`}>
+                {/* ✅ School logo in hover sidebar */}
+                <SchoolLogoOrFallback size="sm" />
+                <span className="text-sm font-bold text-white tracking-wide truncate">
+                  {schoolName || "Dashboard"}
                 </span>
               </div>
               <nav className="flex-1 py-3 overflow-y-auto">
@@ -593,8 +680,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   const isActive =
                     item.href === "/dashboard"
                       ? pathname === "/dashboard"
-                      : pathname === item.href ||
-                        pathname.startsWith(item.href + "/");
+                      : pathname === item.href || pathname.startsWith(item.href + "/");
                   return (
                     <Link href={item.href} key={item.label + "-hover"}>
                       <div
@@ -606,10 +692,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                               : "text-slate-600 hover:text-slate-800"
                         }`}
                       >
-                        <item.icon
-                          size={15}
-                          className="flex-shrink-0 text-slate-300"
-                        />
+                        <item.icon size={15} className="flex-shrink-0 text-slate-300" />
                         <span className="text-sm truncate">{item.label}</span>
                       </div>
                     </Link>
@@ -619,29 +702,27 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Logo */}
-          <div
-            className={`h-14 flex items-center px-5 gap-3 border-b ${isDarkSidebar ? "border-white/10" : "border-gray-100"}`}
-          >
-            <div className="w-6 h-6 grid grid-cols-2 gap-0.5 flex-shrink-0">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white/80 rounded-sm" />
-              ))}
-            </div>
-            {showLabels && (
-              <span className="text-base font-bold text-white tracking-wide">
-                Dashboard
-              </span>
-            )}
-            {sidebarSize === "fullscreen" && (
-              <button
-                onClick={() => setSidebarSize("default")}
-                className="ml-auto text-white/60 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            )}
-          </div>
+         <div className={`py-2 flex flex-col items-center justify-center gap-2 border-b ${isDarkSidebar ? "border-white/10" : "border-gray-100"}`}>
+  
+  <div className="flex justify-center w-full">
+    <SchoolLogoOrFallback  /> 
+  </div>
+
+  {/* {showLabels && (
+    <span className="text-lg font-extrabold text-white tracking-wide truncate px-2 text-center uppercase">
+      {schoolName || "Dashboard"}
+    </span>
+  )} */}
+
+  {sidebarSize === "fullscreen" && (
+    <button
+      onClick={() => setSidebarSize("default")}
+      className="absolute top-4 right-4 text-white/60 hover:text-white"
+    >
+      <X size={18} />
+    </button>
+  )}
+</div>
 
           {/* Nav items */}
           <nav className="flex-1 py-2.5 overflow-y-auto overflow-x-hidden">
@@ -651,6 +732,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         {/* ── MAIN ── */}
         <div className="flex-1 flex flex-col min-w-0 relative">
+
           {/* HEADER */}
           <header
             className={`h-14 flex items-center justify-between px-5 sticky top-0 z-30 flex-shrink-0 ${getNavClass()} ${
@@ -658,96 +740,98 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             }`}
             style={getNavInlineStyle()}
           >
-            {/* ── LEFT: Hamburger + Title ── */}
+            {/* LEFT */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className={
-                  isDarkNav
-                    ? "text-white hover:text-white"
-                    : "text-slate-500 hover:text-slate-700"
-                }
+                className={isDarkNav ? "text-white hover:text-white" : "text-slate-500 hover:text-slate-700"}
               >
                 <Menu size={20} />
               </button>
 
               {role !== "superadmin" && user ? (
-                // ── School Admin: show assigned school name ──
                 <div className="flex items-center gap-2">
-                  
-
-                  {/* School name + sub-label */}
                   <div className="flex flex-col leading-tight">
-                    <span
-                      className={`text-sm font-bold tracking-tight ${
-                        isDarkNav ? "text-white" : "text-slate-700"
-                      }`}
-                    >
+                    <span className={`text-sm font-bold tracking-tight ${isDarkNav ? "text-white" : "text-slate-700"}`}>
                       {schoolLoading
                         ? "Loading..."
                         : schoolName
                           ? schoolName
-                          : user?.name || "School Admin"}
+                          : user?.name || getRoleLabel(role)}
                     </span>
-
-                    {/* Sub-label: show role label below school name */}
                     {!schoolLoading && schoolName && (
-                      <span
-                        className={`text-[10px] font-normal ${
-                          isDarkNav ? "text-white/50" : "text-slate-400"
-                        }`}
-                      >
-                        {role === "admin" ? "School Admin" : role}
+                      <span className={`text-[10px] font-normal ${isDarkNav ? "text-white/50" : "text-slate-400"}`}>
+                        {getRoleLabel(role)}
                       </span>
                     )}
                   </div>
                 </div>
               ) : (
-                // ── Superadmin: show plain Dashboard ──
-                <span
-                  className={`text-sm font-bold tracking-tight ${
-                    isDarkNav ? "text-white" : "text-slate-700"
-                  }`}
-                >
+                <span className={`text-sm font-bold tracking-tight ${isDarkNav ? "text-white" : "text-slate-700"}`}>
                   {role && (
-                <span
-                  className={`text-xs px-2 py-0.5  mr-2 font-medium ${
-                    role === "superadmin"
-                      ? " text-purple-700"
-                      : " text-emerald-700"
-                  }`}
-                >
-                  {role === "superadmin" ? "Super Admin" : "School Admin"}
-                </span>
-              )}
+                    <span className={`text-xs px-2 py-0.5 mr-2 font-medium ${
+                      role === "superadmin" ? "text-purple-700" : "text-emerald-700"
+                    }`}>
+                      {getRoleLabel(role)}
+                    </span>
+                  )}
                 </span>
               )}
             </div>
 
-            {/* ── RIGHT: Role badge + Bell + Avatar + Settings ── */}
+            {/* RIGHT */}
             <div className="flex items-center gap-1">
-              
+              {/* Bell */}
+              <button
+                className={`relative p-2 rounded-md ${
+                  isDarkNav
+                    ? "text-white/70 hover:text-white hover:bg-white/10"
+                    : "text-slate-400 hover:text-slate-700 hover:bg-gray-100"
+                }`}
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center border-2 border-white font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
-             <button
-  // यहाँ relative थप्नु अनिवार्य छ ताकि भित्रको absolute span यसकै माथि बसोस्
-  className={`relative p-2 rounded-md ${
-    isDarkNav
-      ? "text-white/70 hover:text-white hover:bg-white/10"
-      : "text-slate-400 hover:text-slate-700 hover:bg-gray-100"
-  }`}
->
-  <Bell size={20} />
-  {unreadCount > 0 && (
-    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center border-2 border-white font-bold">
-      {unreadCount}
-    </span>
-  )}
-</button>
+              {/* ✅ User avatar: shows userPhoto (personal) or schoolLogo as fallback */}
+              {role && (
+                <Link href={`/${role}/profile`}>
+                  <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center  text-blue-500 text-xs font-bold ml-1 cursor-pointer border-2 border-white/30 hover:opacity-90 transition-opacity">
+                    {userPhoto ? (
+                      // Personal profile photo takes priority
+                      <img
+                        src={userPhoto}
+                        alt={user?.name || "Profile"}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                          // Fall through to school logo or icon below
+                        }}
+                      />
+                    ) : schoolLogo ? (
+                      // ✅ School logo as secondary fallback in user avatar
+                      <img
+                        src={schoolLogo}
+                        alt={schoolName || "School"}
+                        className="w-full h-full object-contain p-0.5"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      // Final fallback: User icon
+                      <User size={14} />
+                    )}
+                  </div>
+                </Link>
+              )}
 
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold ml-1 cursor-pointer">
-                <User size={14} />
-              </div>
-
+              {/* Settings */}
               <button
                 onClick={() => setSettingsOpen(true)}
                 className={`p-2 rounded-md ${
@@ -796,10 +880,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           {/* Backdrop */}
           {settingsOpen && (
-            <div
-              className="fixed inset-0 bg-black/20 z-40"
-              onClick={() => setSettingsOpen(false)}
-            />
+            <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setSettingsOpen(false)} />
           )}
         </div>
       </div>
@@ -808,17 +889,13 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 }
 
 // ── Outer shell ───────────────────────────────────────────────────────────────
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <AuthProvider>
         <NotificationProvider>
-      <DashboardInner>{children}</DashboardInner>
-    </NotificationProvider>
+          <DashboardInner>{children}</DashboardInner>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

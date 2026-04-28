@@ -6,7 +6,7 @@ import { ThemedButton } from "@/components/ui/themedButton";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import { PageHeader } from "@/components/PageHeader";
 import SchoolTable from "@/components/dashboard/school/schoolTable";
-import { SchoolForm } from "@/components/dashboard/school/schoolForm";
+import SchoolForm from "@/components/dashboard/school/schoolForm";
 
 export default function SchoolManagementPage() {
   const [isOpen, setIsOpen] = useState(false);

@@ -3,6 +3,9 @@ import axiosInstance from "@/lib/config/axios.config";
 let teacherCache: any = null;
 let teacherRequestHandle: Promise<any> | null = null;
 
+let teacherDashboardCache: any = null;
+let teacherDashboardRequestHandle: Promise<any> | null = null;
+
 export const TeacherServices = {
   clearCache: () => {
     teacherCache = null;
@@ -31,6 +34,28 @@ export const TeacherServices = {
 
     return teacherRequestHandle;
   },
+
+
+   getTeacherDashboard: async () => {
+    if (teacherDashboardCache) return teacherDashboardCache;
+
+    if (teacherDashboardRequestHandle) return teacherDashboardRequestHandle;
+
+    teacherDashboardRequestHandle = (async () => {
+      try {
+        const res = await axiosInstance.get("/profile/teachers/my_dashboard/");
+        teacherDashboardCache = res.data;
+        return res.data;
+      } catch (error) {
+        throw error;
+      } finally {
+        teacherDashboardRequestHandle = null;
+      }
+    })();
+
+    return teacherDashboardRequestHandle;
+  },
+
 
   createTeacher: async (data: any) => {
     const res = await axiosInstance.post("/profile/teachers/", data);

@@ -72,7 +72,7 @@ export const StudentServices = {
   },
 
   updateStudent: async (id: string | number, data: any) => {
-    const res = await axiosInstance.put(`/profile/students/${id}/`, data);
+    const res = await axiosInstance.patch(`/profile/students/${id}/`, data);
     studentCache = null;
     return res.data;
   },

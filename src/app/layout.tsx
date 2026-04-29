@@ -16,8 +16,8 @@ const nunito = Nunito({
 // ✅ SEO optimized metadata
 export const metadata: Metadata = {
   title: {
-    default: "SMS",
-    template: "%s | SMS",
+    default: "Edify - School Management System",
+    template: "%s | Edify - School Management System",
   },
   description:
     "A modern school management system to manage students, teachers, attendance, exams, and administrative operations efficiently.",
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
     "education software Nepal",
   ],
   authors: [{ name: "Your Company Name" }],
-  creator: "Your Company Name",
+  creator: "Sempa Tech",
   metadataBase: new URL("https://yourdomain.com"), // 🔁 change this
   openGraph: {
-    title: "School Management System",
+    title: "Edify - School Management System",
     description:
       "Manage students, teachers, attendance, exams, and school operations easily with a modern dashboard.",
     url: "https://yourdomain.com", // 🔁 change this
-    siteName: "School Management System",
+    siteName: "Edify - School Management System",
     locale: "en_US",
     type: "website",
   },

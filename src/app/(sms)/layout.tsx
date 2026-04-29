@@ -53,6 +53,7 @@ import { SchoolServices } from "@/services/schoolServices";
 import { NotificationProvider, useNotifications } from "@/lib/context/NotificationContext";
 import { TeacherServices } from "@/services/teacherServices";
 import { StudentServices } from "@/services/studentServices";
+import { StaffServices } from "@/services/staffServices";
 
 // ── Base URL + resolvePhoto ───────────────────────────────────────────────────
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -129,7 +130,7 @@ const PRESET_COLORS: Record<string, string> = {
 
 // ── Role-based menu definitions ──────────────────────────────────────────────
 const SUPERADMIN_MENU: MenuItem[] = [
-  // { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: School, label: "School", href: "/school" },
   { icon: User, label: "User", href: "/user-management" },
 ];
@@ -342,7 +343,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         } else if (role === "student") {
           const dash = await StudentServices.getStudentDashboard();
           setUserPhoto(resolvePhoto(dash?.student?.photo));
-        }
+        } else if (role === "staff") {
+      const dash = await StaffServices.getStaffDashboard();
+      const photo = dash?.staff?.photo_url
+        || dash?.staff?.photo
+        || dash?.photo_url
+        || dash?.photo;
+      setUserPhoto(resolvePhoto(photo));
+    }
       } catch {
         setUserPhoto("");
       }

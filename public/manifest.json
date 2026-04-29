@@ -1,0 +1,39 @@
+{
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "name": "Edify SMS",
+  "short_name": "EdifySMS",
+  "description": "A modern school management system for efficient operations.",
+  "icons": [
+    {
+      "src": "/icons/edify-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any" 
+    },
+    {
+      "src": "/icons/edify-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Edify Desktop Dashboard"
+    },
+    {
+      "src": "/icons/mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "label": "Edify Mobile Dashboard"
+    }
+  ]
+}

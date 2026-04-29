@@ -1,5 +1,5 @@
 // import type { NextConfig } from "next";
-
+import withPWAInit from 'next-pwa';
 import { NextConfig } from "next";
 
 // const nextConfig: NextConfig = {
@@ -13,13 +13,25 @@ import { NextConfig } from "next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig : NextConfig = {
+  turbopack: {
+    // Empty config le webpack compatibility ko warning/error lai silence garcha
+  },
   async rewrites() {
     return [
       {
         source: '/api-proxy/:path*',
-        destination: 'https://demo.sempatech.com/api/:path*',
+        destination: 'https://schoolapi.edifynepal.com/api/:path*',
       },
     ]
   },
 }
-export default nextConfig;
+
+
+const withPWA = withPWAInit({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+});
+
+export default withPWA(nextConfig);

@@ -21,6 +21,28 @@ export const metadata: Metadata = {
   },
   description:
     "A modern school management system to manage students, teachers, attendance, exams, and administrative operations efficiently.",
+
+
+    // 1. Manifest file link garnuhos
+  manifest: "/manifest.json", 
+
+  // 2. Mobile optimized icon ra theme color
+  themeColor: "#4f46e5", // Tapaiko brand color (Indigo/Blue) halnuhos
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Edify",
+  },
+
+  // ... baki metadata (keywords, openGraph, etc.) ustai hunchha
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icons/edify-icon-192.png", // iPhone ko lagi shortcut
+  },
+
+
   keywords: [
     "school management system",
     "student management",
@@ -40,9 +62,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     type: "website",
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
+  // icons: {
+  //   icon: "/favicon.ico",
+  // },
 };
 
 export default function RootLayout({

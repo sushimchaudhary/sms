@@ -15,7 +15,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/edify-icon-512x512.png",
+      "src": "/icons/edify-icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -446,21 +446,7 @@ function TInput({
   );
 }
 
-// ─── Password strength ────────────────────────────────────────────────────────
-function pwStrength(pw: string) {
-  if (!pw) return { label: "", pct: 0, color: "#e2e8f0" };
-  let s = 0;
-  if (pw.length >= 8) s++;
-  if (/[A-Z]/.test(pw)) s++;
-  if (/[0-9]/.test(pw)) s++;
-  if (/[^A-Za-z0-9]/.test(pw)) s++;
-  if (pw.length >= 12) s++;
-  if (s <= 1) return { label: "Weak", pct: 20, color: "#ef4444" };
-  if (s === 2) return { label: "Fair", pct: 40, color: "#f97316" };
-  if (s === 3) return { label: "Medium", pct: 60, color: "#f59e0b" };
-  if (s === 4) return { label: "Strong", pct: 80, color: "#10b981" };
-  return { label: "Very strong", pct: 100, color: "#059669" };
-}
+
 
 type Tab = "profile" | "school" | "password";
 
@@ -705,8 +691,7 @@ export default function AdminProfilePage() {
                   [
                     { label: "Full Name", value: adminName, icon: User },
                     { label: "Email", value: adminEmail, icon: Mail },
-                    { label: "Role", value: "School Admin", icon: Shield },
-                    { label: "School", value: schoolData?.name || "—", icon: School },
+                    
                   ].map(({ label, value, icon: Icon }) => (
                     <div key={label}>
                       <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
@@ -732,7 +717,6 @@ export default function AdminProfilePage() {
                     ) : (
                       [
                         { label: "School Name", value: schoolData.name, icon: School },
-                        { label: "School Code", value: schoolData.code || "—", icon: Hash },
                         { label: "Address", value: schoolData.address || "—", icon: MapPin },
                         { label: "Phone", value: schoolData.phone || "—", icon: Phone },
                        

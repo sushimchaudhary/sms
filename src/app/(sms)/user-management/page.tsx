@@ -55,7 +55,7 @@ export default function UserManagementPage() {
         />
 
         <div className="flex items-center gap-3">
-          <div className="relative w-72">
+          <div className="relative w-58">
             <ThemedInput
               type="text"
               placeholder="Search user..."

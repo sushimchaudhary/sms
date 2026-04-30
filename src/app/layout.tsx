@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "A modern school management system to manage students, teachers, attendance, exams, and administrative operations efficiently.",
 
 
-    // 1. Manifest file link garnuhos
+    // 1. Manifest file link garnuhos (PWA support ko lagi)
   manifest: "/manifest.json", 
 
   // 2. Mobile optimized icon ra theme color
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   // ... baki metadata (keywords, openGraph, etc.) ustai hunchha
   icons: {
     icon: "/favicon.ico",
-    apple: "/icons/edify-icon-192.png", // iPhone ko lagi shortcut
+    apple: "/icons/edify-icon-192.png", // iPhone ko lagi shortcut ------------------
   },
 
 

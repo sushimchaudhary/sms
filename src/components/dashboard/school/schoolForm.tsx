@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   X,
@@ -22,6 +22,8 @@ import { useTheme } from "@/lib/context/ThemeContext";
 import { toast } from "sonner";
 import { SchoolServices } from "@/services/schoolServices";
 import { CancelButton } from "@/components/ui/CancleButton";
+import useAuth from "@/lib/hooks/useAuth";
+import AuthContext from "@/lib/context/AuthContext";
 
 interface ISchoolFormValues {
   name: string;
@@ -49,6 +51,7 @@ export default function SchoolForm({
   const [loading, setLoading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+   const { user } = useContext(AuthContext);
 
   const form = useForm<ISchoolFormValues>({
     defaultValues: {
@@ -113,8 +116,16 @@ export default function SchoolForm({
   };
 
   const onSubmit = async (values: ISchoolFormValues) => {
+    console.log("Current User Role:", user?.role);
+  console.log("Submitting Data:", values);
+
+  if (user?.role !== "superadmin" && !isUpdate) {
+    toast.error("You don't have permission to register a school.");
+    return;
+  }
     setLoading(true);
     try {
+      
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("code", values.code);

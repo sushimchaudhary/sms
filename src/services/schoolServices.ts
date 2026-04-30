@@ -41,6 +41,7 @@ export const SchoolServices = {
   createDetails: async (data: FormData) => {
     const res = await axiosInstance.post("/school/schools/", data);
     schoolCache = null;
+    schoolRequestHandle = null;
     return res.data;
   },
 
@@ -48,6 +49,7 @@ export const SchoolServices = {
   updateDetails: async (id: string | number, data: FormData) => {
     const res = await axiosInstance.patch(`/school/schools/${id}/`, data);
     schoolCache = null;
+    schoolRequestHandle = null;
     return res.data;
   },
 
@@ -55,6 +57,7 @@ export const SchoolServices = {
   deleteDetails: async (id: string | number) => {
     const res = await axiosInstance.delete(`/school/schools/${id}/`);
     schoolCache = null;
+    schoolRequestHandle = null;
     return res.data;
   },
 };

@@ -8,6 +8,7 @@ import axiosInstance from "@/lib/config/axios.config";
 import { toast } from "sonner";
 import { useTheme } from "@/lib/context/ThemeContext";
 import Link from "next/link"; // Navigation ko lagi
+import Image from "next/image";
 
 export default function ForgotPasswordPage() {
   const { primaryColor } = useTheme();
@@ -54,11 +55,12 @@ export default function ForgotPasswordPage() {
         {/* Card Header */}
         <div className="px-4 pt-4 pb-4 text-center">
           <div
-            className="w-16 h-16 rounded-md mx-auto flex items-center justify-center mb-4"
-            style={{ backgroundColor: hexToRgba(primaryColor, 0.1) }}
-          >
-            <KeyRound size={28} style={{ color: primaryColor }} />
-          </div>
+                        className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-2 shadow-sm"
+                        style={{ backgroundColor: `${primaryColor}10` }}
+                      >
+                        <Image src="/edify.png" alt="login icon" width={54} height={54} />
+          
+                      </div>
           <h1 className="text-xl font-bold text-slate-800">Forgot Password?</h1>
           <p className="text-[13px] text-slate-500 mt-2">
             No worries, we'll send you reset instructions.

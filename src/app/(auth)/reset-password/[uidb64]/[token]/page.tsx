@@ -17,6 +17,7 @@ import axiosInstance from "@/lib/config/axios.config";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { useTheme } from "@/lib/context/ThemeContext";
+import Image from "next/image";
 
 interface PageProps {
   params: Promise<{ uidb64: string; token: string }>;
@@ -121,30 +122,25 @@ export default function ResetPassword({ params }: PageProps) {
             }}
           />
 
-          <div className="px-4 pt-4 pb-4">
+          <div className="px-4  pb-4">
 
-            {/* Header */}
-            <div
-              className="flex items-start justify-between pb-4 mb-5"
-              style={{ borderBottom: `1px solid ${hexToRgba(primaryColor, 0.1)}` }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="p-2.5 rounded-md"
-                  style={{ backgroundColor: hexToRgba(primaryColor, 0.1) }}
-                >
-                  <KeyRound size={18} style={{ color: primaryColor }} />
-                </div>
-                <div>
-                  <h2 className="text-[13px] font-bold text-slate-800 leading-tight">
-                    Set New Password
-                  </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Create a strong password for your account
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="pt-5 pb-4 px-8 text-center bg-white">
+                      <div
+                        className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-2 shadow-sm"
+                        style={{ backgroundColor: `${primaryColor}10` }}
+                      >
+                        <Image src="/edify.png" alt="login icon" width={54} height={54} />
+          
+                      </div>
+                      <h1 className="text-[18px] font-extrabold text-[#1e293b] tracking-tight uppercase">
+                       create new password
+                       </h1>
+                      <p className="text-[12px] text-[#64748b] mt-1 font-medium">
+                        Your new password must be different from the previous one.
+                      </p>
+                    </div>
+                     
+                    
 
             
 

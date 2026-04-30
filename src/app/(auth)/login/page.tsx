@@ -25,6 +25,7 @@ import axiosInstance from "../../../lib/config/axios.config";
 import useAuth from "@/lib/hooks/useAuth";
 import { clearAuthCookies, setAuthCookies } from "@/action/auth";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -156,13 +157,14 @@ const onSubmit = async (data: any) => {
               className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-2 shadow-sm"
               style={{ backgroundColor: `${primaryColor}10` }}
             >
-              <ShieldCheck size={32} style={{ color: primaryColor }} />
+              <Image src="/edify.png" alt="login icon" width={54} height={54} />
+
             </div>
             <h1 className="text-[24px] font-extrabold text-[#1e293b] tracking-tight">
               Welcome Back
             </h1>
             <p className="text-[12px] text-[#64748b] mt-1 font-medium">
-              Please enter your credentials to access your SMS dashboard.
+              Please enter your credentials to access your School Management System dashboard.
             </p>
           </div>
 
@@ -177,8 +179,8 @@ const onSubmit = async (data: any) => {
                 render={({ field }) => (
                   <FormItem>
                     <ThemedInput
-                      label="Username"
-                      placeholder="admin@pharma.com"
+                      label="Email"
+                      placeholder="admin12@gmail.com"
                       required
                       icon={<Mail size={14} />}
                       type="text"
@@ -245,7 +247,7 @@ const onSubmit = async (data: any) => {
               <ThemedButton
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-9 mt-6 text-sm font-bold shadow-md flex items-center justify-center gap-2"
+                className="w-full h-9 mt-4 text-sm font-bold shadow-md flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
@@ -260,7 +262,7 @@ const onSubmit = async (data: any) => {
               </ThemedButton>
 
               <p className="text-center text-[12px] text-gray-400 mt-4">
-                © {new Date().getFullYear()} WebPharma System. All rights
+                © {new Date().getFullYear()} School Management System. All rights
                 reserved.
               </p>
             </form>

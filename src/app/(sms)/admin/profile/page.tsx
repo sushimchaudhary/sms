@@ -349,7 +349,7 @@ function SchoolLogoUpload({
               <img
                 src={preview}
                 alt="current logo"
-                className="w-20 h-20 rounded-xl object-contain border-4"
+                className="w-20 h-20 rounded-full object-contain border-2"
                 style={{ borderColor: primaryColor + "40" }}
               />
             </div>

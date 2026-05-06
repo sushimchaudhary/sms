@@ -1,54 +1,10 @@
-// import axios from "axios";
-// import Cookies from "js-cookie";
-
-// const BASE_URL = "https://demo.sempatech.com/api";
-
-// const axiosInstance = axios.create({
-//   baseURL: BASE_URL,
-//   headers: {
-//     "Content-Type": "application/json",
-//   },
-//   // withCredentials: true, // Django JWT ma yesko dherai awashyakta pardaina unless using HttpOnly Cookies
-// });
-
-// axiosInstance.interceptors.request.use(
-//   (config) => {
-//     const token = Cookies.get("auth_token");
-
-
-//     const url = config.url?.toLowerCase() || "";
-//     const isLoginRoute = url.includes("/login");
-
-//     if (token && !isLoginRoute) {
-//       config.headers["Authorization"] = `Bearer ${token}`;
-//     }
-
-//     // 3. FormData handle garna (Image upload ko lagi)
-//     if (config.data instanceof FormData) {
-//       config.headers["Content-Type"] = "multipart/form-data";
-//     }
-
-//     return config;
-//   },
-//   (error) => Promise.reject(error)
-// );
-
-// export const publicAxios = axios.create({
-//   baseURL: BASE_URL,
-//   headers: {
-//     "Content-Type": "application/json",
-//   },
-// });
-
-
-// export default axiosInstance;
 
 
 import axios from "axios";
 import Cookies from "js-cookie";
 
-  const BASE_URL = "https://schoolapi.edifynepal.com/api";
-// const BASE_URL = "http://127.0.0.1:8000/api";
+  // const BASE_URL = "https://schoolapi.edifynepal.com/api";
+const BASE_URL = "http://127.0.0.1:8000/api";
 
 // ==============================
 // 🔐 Private Axios (with token)
@@ -71,8 +27,8 @@ axiosInstance.interceptors.request.use(
     // Login / Refresh jasto route ma token haldaina
     const isAuthRoute =
       url.includes("/login") ||
-      url.includes("/refresh") ||
-      url.includes("/register");
+      url.includes("/refresh") ;
+      // url.includes("/register");
 
     // Token attach garne
     if (token && !isAuthRoute) {
@@ -92,11 +48,27 @@ axiosInstance.interceptors.request.use(
 // Response Interceptor (optional but useful)
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Token expire handle (optional)
-    if (error.response?.status === 401) {
-      console.log("Unauthorized - Token may be expired");
-      // redirect to login or refresh token logic
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refresh = localStorage.getItem("refresh");
+
+      if (refresh) {
+        const res = await axios.post("/auth/token/refresh/", {
+          refresh,
+        });
+
+        const newAccess = res.data.access;
+
+        localStorage.setItem("access", newAccess);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+
+        return axiosInstance(originalRequest);
+      }
     }
 
     return Promise.reject(error);

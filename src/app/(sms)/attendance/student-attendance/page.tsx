@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState,  } from "react";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { PageHeader } from "@/components/PageHeader";
-import { Plus, Search, X, Users, Filter, SlidersHorizontal } from "lucide-react";
+import {  Search, X, Users, Filter, SlidersHorizontal } from "lucide-react";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import StudentAttendanceTable from "@/components/dashboard/attendance/studentAttendanceTable";
-import StudentAttendanceForm from "@/components/dashboard/attendance/studentAttendanceForm";
 import BulkAttendanceForm from "@/components/dashboard/attendance/bulkStudentAttendanceForm";
 import { Select, DatePicker } from "antd";
 import dayjs from "dayjs";
@@ -198,12 +197,12 @@ export default function AttendancePage() {
       />
 
       {/* Modals */}
-      <StudentAttendanceForm
+      {/* <StudentAttendanceForm
         isOpen={isModalOpen}
         initialData={editData}
         onClose={handleCloseSingle}
         onSuccess={handleSuccess}
-      />
+      /> */}
       <BulkAttendanceForm
         isOpen={isBulkOpen}
         onClose={() => setIsBulkOpen(false)}

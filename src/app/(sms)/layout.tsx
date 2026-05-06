@@ -1,6 +1,8 @@
+
+
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -54,6 +56,7 @@ import { NotificationProvider, useNotifications } from "@/lib/context/Notificati
 import { TeacherServices } from "@/services/teacherServices";
 import { StudentServices } from "@/services/studentServices";
 import { StaffServices } from "@/services/staffServices";
+import { NotificationServices } from "@/services/notificationServices";
 
 // ── Base URL + resolvePhoto ───────────────────────────────────────────────────
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -321,6 +324,35 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const { unreadCount } = useNotifications();
 
   const [userPhoto, setUserPhoto] = useState<string>("");
+
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+const [latestNotifications, setLatestNotifications] = useState<any[]>([]);
+const notifRef = useRef<HTMLDivElement>(null);
+
+// Fetch latest 5 notifications for dropdown
+useEffect(() => {
+  const fetchLatest = async () => {
+    try {
+      const res = await NotificationServices.getAllNotifications();
+      const all = Array.isArray(res) ? res : res?.results || res?.data || [];
+      setLatestNotifications([...all].reverse().slice(0, 5));
+    } catch {}
+  };
+  if (user) fetchLatest();
+}, [user]);
+
+// Close dropdown on outside click
+useEffect(() => {
+  const handler = (e: MouseEvent) => {
+    if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+      setNotifDropdownOpen(false);
+    }
+  };
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, []);
+
+
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -743,11 +775,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           {/* HEADER */}
           <header
-            className={`h-14 flex items-center justify-between px-5 sticky top-0 z-30 flex-shrink-0 ${getNavClass()} ${
-              layoutMode === "detached" ? "rounded-xl mb-1 mx-0" : ""
-            }`}
-            style={getNavInlineStyle()}
-          >
+  className={`h-14 flex items-center justify-between px-5 sticky top-0 z-30 flex-shrink-0 ${getNavClass()} ${
+    layoutMode === "detached" ? "rounded-xl mb-1 mx-0" : ""
+  }`}
+  style={getNavInlineStyle()}
+>
+
             {/* LEFT */}
             <div className="flex items-center gap-3">
               <button
@@ -788,22 +821,103 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* RIGHT */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-visible relative">
               {/* Bell */}
-              <button
-                className={`relative p-2 rounded-md ${
-                  isDarkNav
-                    ? "text-white/70 hover:text-white hover:bg-white/10"
-                    : "text-slate-400 hover:text-slate-700 hover:bg-gray-100"
+            {/* Bell with dropdown */}
+<div ref={notifRef} className="relative" style={{ zIndex: 9999 }}>
+  <button
+    onClick={() => setNotifDropdownOpen((prev) => !prev)}
+    className={`relative p-2 rounded ${
+      isDarkNav
+        ? "text-white/70 hover:text-white hover:bg-white/10"
+        : "text-slate-400 hover:text-slate-700 hover:bg-gray-100"
+    }`}
+  >
+    <Bell size={20} />
+    {/* {unreadCount > 0 && (
+      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center border-2 border-white font-bold">
+        {unreadCount}
+      </span>
+    )} */}
+  </button>
+
+  {/* Dropdown */}
+  {notifDropdownOpen && (
+    <div className="absolute right-0 top-[calc(100%+8px)] w-[320px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded shadow-xl z-[9999] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-slate-700">
+        <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+          Notifications
+        </span>
+        {unreadCount > 0 && (
+          <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+            {unreadCount} unread
+          </span>
+        )}
+      </div>
+
+      {/* List */}
+      <div>
+        {latestNotifications.length === 0 ? (
+          <div className="py-8 text-center text-[12px] text-slate-400">
+            No notifications
+          </div>
+        ) : (
+          latestNotifications.map((n) => (
+            <Link
+              href="/notification"
+              key={n.id}
+              onClick={() => setNotifDropdownOpen(false)}
+            >
+              <div
+                className={`flex gap-2.5 px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 cursor-pointer transition-colors ${
+                  !n.is_read
+                    ? "bg-blue-50/60 hover:bg-blue-50"
+                    : "hover:bg-gray-50 dark:hover:bg-slate-800"
                 }`}
               >
-                <Bell size={20} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center border-2 border-white font-bold">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
+                {/* Unread dot */}
+                <div className="mt-1.5 flex-shrink-0">
+                  {!n.is_read ? (
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  ) : (
+                    <div className="w-2 h-2" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`text-[12px] truncate ${
+                      !n.is_read
+                        ? "font-semibold text-slate-700"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {n.title}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                    {n.created_by_email} · {n.target_role}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {new Date(n.created_at).toLocaleDateString("en-US", {
+                      month: "short", day: "numeric", year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* Footer */}
+      <Link href="/notification" onClick={() => setNotifDropdownOpen(false)}>
+        <div className="px-4 py-2.5 text-center text-[12px] font-semibold text-blue-600 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors bg-gray-50 dark:bg-slate-800/50">
+          View all notifications →
+        </div>
+      </Link>
+    </div>
+  )}
+</div>
 
               {/* ✅ User avatar: shows userPhoto (personal) or schoolLogo as fallback */}
               {role && (

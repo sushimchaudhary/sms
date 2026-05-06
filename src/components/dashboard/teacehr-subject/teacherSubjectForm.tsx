@@ -75,11 +75,23 @@ export default function TeacherSubjectForm({ initialData, onClose, onSuccess, is
         ? await TeacherSubjectServices.updateTeacherSubject(initialData.id, values)
         : await TeacherSubjectServices.createTeacherSubject(values);
       toast.success(isUpdate ? "Assignment updated" : "Subject assigned successfully");
-      onSuccess(); onClose();
-    } catch (err: any) {
-      toast.error(err.response?.data?.non_field_errors?.[0] || "Assignment already exists or error occurred");
-    } finally { setLoading(false); }
-  };
+          onSuccess(); onClose();
+      } catch (err: any) {
+      const serverError = err.response?.data;
+
+      if (serverError && typeof serverError === "object") {
+        Object.keys(serverError).forEach((key) => {
+          const message = Array.isArray(serverError[key]) 
+            ? serverError[key][0]  
+            : serverError[key];
+          
+          toast.error(`${key}: ${message}`);
+        });
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    }finally { setLoading(false); }
+      };
 
   return (
     <>

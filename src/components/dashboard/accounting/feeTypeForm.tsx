@@ -115,7 +115,7 @@ export default function FeeTypeForm({ initialData, onClose, onSuccess, isOpen }:
                 </FormItem>
 
                 {/* Fee Type Code */}
-                <FormItem>
+                {/* <FormItem>
                   <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
                     <Hash size={12} className="text-blue-500" /> Unique Code
                   </label>
@@ -139,7 +139,7 @@ export default function FeeTypeForm({ initialData, onClose, onSuccess, isOpen }:
                       <strong> {form.watch('name') ? form.watch('name').toUpperCase().replace(/\s+/g, '_') : "FEE_CODE"}</strong>.
                     </p>
                   </div>
-                </FormItem>
+                </FormItem> */}
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                   <CancelButton onClick={onClose} disabled={loading} />

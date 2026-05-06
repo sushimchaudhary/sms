@@ -2,6 +2,7 @@
 import withPWAInit from 'next-pwa';
 import { NextConfig } from "next";
 
+
 // const nextConfig: NextConfig = {
 //   /* config options here */
 //   reactCompiler: true,
@@ -12,6 +13,9 @@ import { NextConfig } from "next";
 
 
 /** @type {import('next').NextConfig} */
+
+
+
 const nextConfig : NextConfig = {
   turbopack: {
     // Empty config le webpack compatibility ko warning/error lai silence garcha
@@ -34,4 +38,4 @@ const withPWA = withPWAInit({
   skipWaiting: true,
 });
 
-export default withPWA(nextConfig);
+export default withPWA((nextConfig));

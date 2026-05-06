@@ -12,11 +12,25 @@ import dayjs from "dayjs";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { AttendanceServices } from "@/services/attendanceServices";
 import { EnrollmentServices } from "@/services/studentEnrollment";
+import { ClassServices } from "@/services/classServices";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { CancelButton } from "@/components/ui/CancleButton";
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 type AttendanceStatus = "present" | "absent" | "leave" | "late";
+
+interface ClassRoom {
+  _id: string | number;
+  id?: string | number;
+  name: string;
+  session_name?: string;
+  session?: { _id: string; name: string };
+}
+
+interface SectionOption {
+  id: number;
+  name: string;
+}
 
 interface Enrollment {
   id: number;
@@ -43,24 +57,20 @@ interface BulkAttendanceFormProps {
   onSuccess: () => void;
 }
 
-/* ─── Safe getters ───────────────────────────────────────────────── */
-const getClassId = (e: Enrollment): number | null => {
+/* ─── Safe enrollment getters ────────────────────────────────────── */
+const getEnrollClassId = (e: Enrollment): number | null => {
   if (typeof e.class_assigned === "object" && e.class_assigned !== null) return e.class_assigned.id;
   if (typeof e.class_assigned === "number") return e.class_assigned;
   return e.class_assigned_id ?? null;
 };
-const getClassName = (e: Enrollment): string => {
-  if (typeof e.class_assigned === "object" && e.class_assigned !== null) return e.class_assigned.name;
-  return e.class_assigned_name ?? `Class ${getClassId(e)}`;
-};
-const getSectionId = (e: Enrollment): number | null => {
+const getEnrollSectionId = (e: Enrollment): number | null => {
   if (typeof e.section === "object" && e.section !== null) return e.section.id;
   if (typeof e.section === "number") return e.section;
   return e.section_id ?? null;
 };
-const getSectionName = (e: Enrollment): string => {
+const getEnrollSectionName = (e: Enrollment): string => {
   if (typeof e.section === "object" && e.section !== null) return e.section.name;
-  return e.section_name ?? `Section ${getSectionId(e)}`;
+  return e.section_name ?? `Section ${getEnrollSectionId(e)}`;
 };
 
 /* ─── Status config ──────────────────────────────────────────────── */
@@ -78,16 +88,14 @@ const ALL_STATUSES: AttendanceStatus[] = ["present", "absent", "leave", "late"];
 export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkAttendanceFormProps) {
   const { primaryColor } = useTheme();
 
-  /* ── Animation state ── */
+  /* ── Animation ── */
   const [visible, setVisible]   = useState(false);
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setVisible(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setAnimated(true));
-      });
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnimated(true)));
     } else {
       setAnimated(false);
       const t = setTimeout(() => setVisible(false), 250);
@@ -95,35 +103,57 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
     }
   }, [isOpen]);
 
+  /* ── Filter state ── */
   const [classId, setClassId]     = useState<number | null>(null);
   const [sectionId, setSectionId] = useState<number | null>(null);
   const [date, setDate]           = useState<string>(dayjs().format("YYYY-MM-DD"));
 
-  const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>([]);
-  const [loadingOptions, setLoadingOptions] = useState(false);
+  /* ── Data ── */
+  const [classes, setClasses]               = useState<ClassRoom[]>([]);         // from ClassServices
+  const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>([]);        // from EnrollmentServices
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
 
-  const [enrollments, setEnrollments]   = useState<Enrollment[]>([]);
-  const [rows, setRows]                 = useState<Record<number, AttendanceRow>>({});
-  const [selected, setSelected]         = useState<Set<number>>(new Set());
-  const [search, setSearch]             = useState("");
-  const [submitting, setSubmitting]     = useState(false);
+  /* ── Attendance rows ── */
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [rows, setRows]               = useState<Record<number, AttendanceRow>>({});
+  const [selected, setSelected]       = useState<Set<number>>(new Set());
+  const [search, setSearch]           = useState("");
+  const [submitting, setSubmitting]   = useState(false);
 
-  /* ── Fetch all enrollments once when modal opens ── */
+  /* ── Fetch classes from ClassServices (same as ClassTable) ── */
   useEffect(() => {
     if (!isOpen) return;
-    setLoadingOptions(true);
+    setLoadingClasses(true);
+    ClassServices.getAllClasses()
+      .then((res) => {
+        const data: ClassRoom[] = Array.isArray(res) ? res : res?.results || res?.data || [];
+        // Reverse to match ClassTable display order (newest first), then sort alphabetically
+        setClasses(
+          [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }))
+        );
+      })
+      .catch(() => toast.error("Failed to load classes"))
+      .finally(() => setLoadingClasses(false));
+  }, [isOpen]);
+
+  /* ── Fetch enrollments once when modal opens ── */
+  useEffect(() => {
+    if (!isOpen) return;
+    setLoadingEnrollments(true);
     EnrollmentServices.getAllEnrollments()
       .then((res) => {
         const data: Enrollment[] = res?.results || res || [];
         setAllEnrollments(data);
       })
-      .catch(() => toast.error("Failed to load class/section options"))
-      .finally(() => setLoadingOptions(false));
+      .catch(() => toast.error("Failed to load enrollments"))
+      .finally(() => setLoadingEnrollments(false));
   }, [isOpen]);
 
   /* ── Reset on close ── */
   useEffect(() => {
     if (!isOpen) {
+      setClasses([]);
       setAllEnrollments([]);
       setEnrollments([]);
       setRows({});
@@ -134,59 +164,114 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
     }
   }, [isOpen]);
 
-  /* ── Auto-load students when BOTH class and section are selected ── */
-  useEffect(() => {
-    if (!classId || !sectionId) {
-      setEnrollments([]);
-      setRows({});
-      setSelected(new Set());
-      return;
-    }
-    const filtered = allEnrollments.filter(
-      (e) => getClassId(e) === classId && getSectionId(e) === sectionId
-    );
-    if (filtered.length === 0) toast.info("No students found for this class/section");
-    setEnrollments(filtered);
-    const initial: Record<number, AttendanceRow> = {};
-    filtered.forEach((e) => { initial[e.id] = { enrollment: e.id, status: "present", remarks: "" }; });
-    setRows(initial);
+  /* ── Auto-load students when both class + section selected ── */
+  // useEffect(() => {
+  //   if (!classId || !sectionId) {
+  //     setEnrollments([]);
+  //     setRows({});
+  //     setSelected(new Set());
+  //     return;
+  //   }
+  //   const filtered = allEnrollments.filter(
+  //     (e) => getEnrollClassId(e) === classId && getEnrollSectionId(e) === sectionId
+  //   );
+  //   if (filtered.length === 0) toast.info("No students found for this class/section");
+  //   setEnrollments(filtered);
+  //   const initial: Record<number, AttendanceRow> = {};
+  //   filtered.forEach((e) => { initial[e.id] = { enrollment: e.id, status: "present", remarks: "" }; });
+  //   setRows(initial);
+  //   setSelected(new Set());
+  // }, [classId, sectionId, allEnrollments]);
+
+
+  /* ── Auto-load students when class is selected (Section optional) ── */
+useEffect(() => {
+  if (!classId) {
+    setEnrollments([]);
+    setRows({});
     setSelected(new Set());
-  }, [classId, sectionId, allEnrollments]);
+    return;
+  }
 
-  /* ── Derived options ── */
-  const classOptions = useMemo(() => {
-    const map = new Map<number, string>();
-    allEnrollments.forEach((e) => {
-      const id = getClassId(e);
-      if (id !== null) map.set(id, getClassName(e));
-    });
-    return [...map.entries()]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [allEnrollments]);
+  // फिल्टर: क्लास अनिवार्य, सेक्सन छ भने सेक्सनले पनि फिल्टर गर्ने
+  const filtered = allEnrollments.filter((e) => {
+    const matchesClass = getEnrollClassId(e) === classId;
+    const matchesSection = sectionId ? getEnrollSectionId(e) === sectionId : true;
+    return matchesClass && matchesSection;
+  });
 
-  const sectionOptions = useMemo(() => {
-    const source = classId
-      ? allEnrollments.filter((e) => getClassId(e) === classId)
-      : allEnrollments;
-    const map = new Map<number, string>();
-    source.forEach((e) => {
-      const id = getSectionId(e);
-      if (id !== null) map.set(id, getSectionName(e));
-    });
-    return [...map.entries()]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [allEnrollments, classId]);
+  if (filtered.length === 0 && allEnrollments.length > 0) {
+    toast.info("No students found for this selection");
+  }
 
+  setEnrollments(filtered);
+  
+  // Initial rows state set गर्ने
+  const initial: Record<number, AttendanceRow> = {};
+  filtered.forEach((e) => { 
+    initial[e.id] = { enrollment: e.id, status: "present", remarks: "" }; 
+  });
+  setRows(initial);
+  setSelected(new Set());
+}, [classId, sectionId, allEnrollments]);
+
+
+
+  /* ── Class dropdown options — from ClassServices directly ── */
+  const classOptions = useMemo(
+    () =>
+      classes.map((c) => ({
+        value: Number(c._id ?? c.id),
+        label: c.name,
+      })),
+    [classes]
+  );
+
+  /* ── Section options — derived from enrollments for the selected class ── */
+  // const sectionOptions = useMemo(() => {
+  //   const source = classId
+  //     ? allEnrollments.filter((e) => getEnrollClassId(e) === classId)
+  //     : allEnrollments;
+  //   const map = new Map<number, string>();
+  //   source.forEach((e) => {
+  //     const id = getEnrollSectionId(e);
+  //     if (id !== null) map.set(id, getEnrollSectionName(e));
+  //   });
+  //   return [...map.entries()]
+  //     .map(([value, label]) => ({ value, label }))
+  //     .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }));
+  // }, [allEnrollments, classId]);
+
+  /* ── Section options — filtered by selected class ── */
+const sectionOptions = useMemo(() => {
+  if (!classId) return [];
+
+  // छानिएको क्लासका विद्यार्थीहरू मात्र निकाल्ने
+  const source = allEnrollments.filter((e) => getEnrollClassId(e) === classId);
+  
+  const map = new Map<number, string>();
+  source.forEach((e) => {
+    const id = getEnrollSectionId(e);
+    const name = getEnrollSectionName(e);
+    if (id !== null) map.set(id, name);
+  });
+
+  return [...map.entries()]
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+}, [allEnrollments, classId]);
+
+  /* ── Filtered visible students ── */
   const visibleStudents = useMemo(
-    () => enrollments.filter((e) => {
-      const name = e.student?.full_name || e.student_name || "";
-      return name.toLowerCase().includes(search.toLowerCase());
-    }),
+    () =>
+      enrollments.filter((e) => {
+        const name = e.student?.full_name || e.student_name || "";
+        return name.toLowerCase().includes(search.toLowerCase());
+      }),
     [enrollments, search]
   );
 
+  /* ── Stats ── */
   const stats = useMemo(() => {
     const counts = { present: 0, absent: 0, leave: 0, late: 0 };
     enrollments.forEach((e) => { const s = rows[e.id]?.status; if (s) counts[s]++; });
@@ -196,6 +281,7 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
   const markedCount = enrollments.filter((e) => rows[e.id]?.status).length;
   const progress    = enrollments.length ? (markedCount / enrollments.length) * 100 : 0;
 
+  /* ── Row actions ── */
   const setStatus  = (id: number, status: AttendanceStatus) => setRows((p) => ({ ...p, [id]: { ...p[id], status } }));
   const setRemarks = (id: number, remarks: string)          => setRows((p) => ({ ...p, [id]: { ...p[id], remarks } }));
 
@@ -217,6 +303,7 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
     setSelected(new Set());
   };
 
+  /* ── Submit ── */
   const handleSubmit = async () => {
     if (!enrollments.length) { toast.warning("No students loaded"); return; }
     setSubmitting(true);
@@ -242,6 +329,8 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
   };
 
   if (!visible) return null;
+
+  const isLoading = loadingClasses || loadingEnrollments;
 
   return (
     <>
@@ -269,30 +358,36 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
                 <UserCheck size={14} style={{ color: primaryColor }} />
                 <span className="text-[13px] font-bold text-[#364a63]">Mark Attendance For Your Class</span>
               </div>
-              <button onClick={onClose} className="text-[10px] font-bold text-red-500 hover:text-600 hover:rotate-90 transition-transform">
+              <button onClick={onClose} className="text-red-500 hover:rotate-90 transition-transform">
                 <X size={14} />
               </button>
             </div>
 
-            {/* Filters — now 3 cols, no Load button ── */}
+            {/* Filters */}
             <div className="grid grid-cols-3 gap-3 px-5 py-3 border-b border-gray-100 bg-white">
+              {/* Class — fetched from ClassServices */}
               <div>
                 <label className="text-[10px] font-bold text-[#8094ae] uppercase mb-1 block">Class</label>
                 <Select
                   className="w-full h-[33px]"
-                  placeholder={loadingOptions ? "Loading..." : classOptions.length === 0 ? "No classes found" : "Select class"}
-                  loading={loadingOptions}
+                  placeholder={loadingClasses ? "Loading classes…" : classOptions.length === 0 ? "No classes found" : "Select class"}
+                  loading={loadingClasses}
                   options={classOptions}
                   value={classId}
-                  onChange={(val) => {
-                    setClassId(val);
-                    setSectionId(null); // reset section when class changes
-                  }}
+                  onChange={(val) => { setClassId(val); setSectionId(null); }}
                   showSearch
                   optionFilterProp="label"
+                  notFoundContent={
+                    loadingClasses ? (
+                      <span className="text-[11px] text-[#8094ae]">Loading…</span>
+                    ) : (
+                      <span className="text-[11px] text-[#8094ae]">No classes found</span>
+                    )
+                  }
                 />
               </div>
 
+              {/* Section — derived from enrollments */}
               <div>
                 <label className="text-[10px] font-bold text-[#8094ae] uppercase mb-1 block">
                   Section
@@ -302,16 +397,20 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
                 </label>
                 <Select
                   className="w-full h-[33px]"
-                  placeholder={!classId ? "Select class first" : "Select section"}
+                  placeholder={!classId ? "Select class first" : loadingEnrollments ? "Loading…" : "Select section"}
                   options={sectionOptions}
                   value={sectionId}
                   onChange={(val) => setSectionId(val)}
-                  disabled={!classId}
+                  disabled={!classId || loadingEnrollments}
                   showSearch
                   optionFilterProp="label"
+                  notFoundContent={
+                    <span className="text-[11px] text-[#8094ae]">No sections found</span>
+                  }
                 />
               </div>
 
+              {/* Date */}
               <div>
                 <label className="text-[10px] font-bold text-[#8094ae] uppercase mb-1 block">Date</label>
                 <DatePicker
@@ -402,10 +501,18 @@ export default function BulkAttendanceForm({ isOpen, onClose, onSuccess }: BulkA
                 <div className="flex flex-col items-center justify-center py-16 text-[#8094ae]">
                   <Users size={36} className="mb-3 opacity-30" />
                   <span className="text-[13px] font-bold text-[#364a63]">
-                    {loadingOptions ? "Loading data..." : !classId ? "Select a class to begin" : !sectionId ? "Now select a section" : "No students found"}
+                    {isLoading
+                      ? "Loading data…"
+                      : !classId
+                      ? "Select a class to begin"
+                      : !sectionId
+                      ? "Now select a section"
+                      : "No students found"}
                   </span>
                   <span className="text-[11px] mt-1">
-                    {!classId || !sectionId ? "Students will load automatically" : "Try a different class or section"}
+                    {!classId || !sectionId
+                      ? "Students will load automatically"
+                      : "Try a different class or section"}
                   </span>
                 </div>
               ) : (

@@ -61,21 +61,55 @@ export const FeeServices = {
 
 
   // --- FEE STRUCTURES (The one used in your Table/Form) ---
-  getAllFeeStructures: async (params?: any) => {
-    if (feeCache.feeStructures && !params?.search) return feeCache.feeStructures;
-    if (feeRequestHandles.feeStructures) return feeRequestHandles.feeStructures;
+  // getAllFeeStructures: async (params?: any) => {
+  //   if (feeCache.feeStructures && !params?.search) return feeCache.feeStructures;
+  //   if (feeRequestHandles.feeStructures) return feeRequestHandles.feeStructures;
 
-    feeRequestHandles.feeStructures = (async () => {
-      try {
-        const res = await axiosInstance.get("/accounting/fee-structures/", { params });
-        if (!params?.search) feeCache.feeStructures = res.data;
-        return res.data;
-      } finally {
-        feeRequestHandles.feeStructures = null;
-      }
-    })();
+  //   feeRequestHandles.feeStructures = (async () => {
+  //     try {
+  //       const res = await axiosInstance.get("/accounting/fee-structures/", { params });
+  //       if (!params?.search) feeCache.feeStructures = res.data;
+  //       return res.data;
+  //     } finally {
+  //       feeRequestHandles.feeStructures = null;
+  //     }
+  //   })();
+  //   return feeRequestHandles.feeStructures;
+  // },
+
+  // --- FEE STRUCTURES ---
+getAllFeeStructures: async (params?: any) => {
+  // 🚩 समस्या यहाँ थियो: !params?.search मात्र चेक गर्दा student_id आउँदा पनि क्यास नै पठाइदिन्थ्यो
+  const hasParams = params && Object.keys(params).length > 0;
+
+  if (feeCache.feeStructures && !hasParams) {
+    return feeCache.feeStructures;
+  }
+
+  if (feeRequestHandles.feeStructures && !hasParams) {
     return feeRequestHandles.feeStructures;
-  },
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const res = await axiosInstance.get("/accounting/fee-structures/", { params });
+      
+      if (!hasParams) {
+        feeCache.feeStructures = res.data;
+      }
+      
+      return res.data;
+    } finally {
+      feeRequestHandles.feeStructures = null;
+    }
+  })();
+
+  if (!hasParams) {
+    feeRequestHandles.feeStructures = fetchPromise;
+  }
+
+  return fetchPromise;
+},
 
   createFeeStructure: async (data: any) => {
     const res = await axiosInstance.post("/accounting/fee-structures/", data);

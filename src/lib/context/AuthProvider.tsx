@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import AuthContext from "./AuthContext";
 import { IUser, ICredentials } from "../../types/authType";
 import Cookies from "js-cookie";
-import axiosInstance from "../config/axios.config";
+import { UserServices } from "@/services/authServices";
 
 export const AuthProvider = ({
   children,
@@ -12,21 +12,31 @@ export const AuthProvider = ({
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<IUser | null>(null);
 
-  const getLoggedInUser = useCallback(async () => {
-    try {
-      const userInfo = Cookies.get("user_info");
-      if (userInfo) {
-        setUser(JSON.parse(userInfo));
-      } else {
-        const res = await axiosInstance.get("/auth/me");
-        setUser(res.data.data);
-      }
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
+
+const getLoggedInUser = useCallback(async () => {
+  setLoading(true);
+  try {
+    const userInfo = Cookies.get("user_info");
+    
+    if (userInfo) {
+      setUser(JSON.parse(userInfo));
+    } else {
+      
+      const res = await UserServices.getDetails(); 
+
+      
+      const userData = res.data?.data || res.data || res;
+      setUser(userData);
+      
+      Cookies.set("user_info", JSON.stringify(userData));
     }
-  }, []);
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+    setUser(null);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const login = async (credentials: ICredentials) => {
     console.log("Login credentials:", credentials);
@@ -55,3 +65,4 @@ export const AuthProvider = ({
     </AuthContext.Provider>
   );
 };
+

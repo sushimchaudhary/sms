@@ -20,17 +20,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const getLoggedInUser = useCallback(async () => {
     setLoading(true);
     try {
-      // १. पहिले API बाट फ्रेस डाटा तान्ने (यसमा schoolName वा school object पक्का हुन्छ)
       const res = await axiosInstance.get("/auth/me");
       const userData = res.data.data;
       
       setLoggedInUser(userData);
 
-      // २. कुकीलाई पनि अपडेट गरिदिने ताकि पछिल्लो पटक काम लागोस्
       Cookies.set("user_info", JSON.stringify(userData), { expires: 7 });
 
     } catch (error) {
-      // यदि API फेल खायो भने मात्र कुकी चेक गर्ने
       const userInfo = Cookies.get("user_info");
       if (userInfo) {
         setLoggedInUser(JSON.parse(userInfo));
@@ -70,3 +67,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export default AuthContext;
+
+

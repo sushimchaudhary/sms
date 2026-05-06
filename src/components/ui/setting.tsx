@@ -8,7 +8,11 @@ import axiosInstance from "@/lib/config/axios.config";
 import { Modal } from "antd";
 import { ExclamationCircleFilled } from "@ant-design/icons";
 import { logoutAction } from "@/action/auth";
-
+import { useTranslations } from "next-intl";
+import { Globe } from "lucide-react";
+import { useLanguage } from "@/lib/context/LanguageContext";
+import { label } from "framer-motion/m";
+import { useT } from "@/lib/hooks/useT";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 export type SkinMode = "light" | "dark";
@@ -394,6 +398,43 @@ export default function SettingsDrawer({
   const [isClosing, setIsClosing] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const { locale, setLocale, isPending } = useLanguage();
+
+  // ── Translations (each key translated individually) ──────────────────────
+  const tLanguage       = useT("language");
+  const tEnglish        = useT("english");
+  const tNepali         = useT("nepali");
+  const tLoading        = useT("loading");
+  const tColorScheme    = useT("colorScheme");
+  const tLight          = useT("light");
+  const tDark           = useT("dark");
+  const tTopbarColor    = useT("topbarColor");
+  const tMenuColor      = useT("menuColor");
+  const tSidebarSize    = useT("sidebarSize");
+  const tDirection      = useT("direction");
+  const tLtr            = useT("ltr");
+  const tRtl            = useT("rtl");
+  const tDefault        = useT("default");
+  const tCompact        = useT("compact");
+  const tCondensed      = useT("condensed");
+  const tPrimarySkin    = useT("primarySkin");
+  const tCustom         = useT("custom");
+  const tPickAColor     = useT("pickAColor");
+  const tActive         = useT("active");
+  const tResetSettings  = useT("resetSettings");
+  const tChangePassword = useT("changePassword");
+  const tLogout         = useT("logout");
+  // Skin label translations
+  const tDefault2       = useT("Default");
+  const tBlueLight      = useT("Blue Light");
+  const tEgyptian       = useT("Egyptian");
+  const tPurple         = useT("Purple");
+  const tBlue           = useT("Blue");
+  const tRed            = useT("Red");
+  const tOrange         = useT("Orange");
+  const tPink           = useT("Pink");
+  const tCyan           = useT("Cyan");
+  const tYellow         = useT("Yellow");
 
   const closePassModal = () => {
     setIsClosing(true);
@@ -409,36 +450,36 @@ export default function SettingsDrawer({
   const primarySkins = [
     {
       key: "default",
-      label: "Default",
+      label: tDefault2,
       gradient: "from-emerald-400 to-teal-500",
     },
     {
       key: "bluelight",
-      label: "Blue Light",
+      label: tBlueLight,
       gradient: "from-blue-300 to-blue-400",
     },
     {
       key: "egyptian",
-      label: "Egyptian",
+      label: tEgyptian,
       gradient: "from-teal-600 to-[#0f4c3a]",
     },
     {
       key: "purple",
-      label: "Purple",
+      label: tPurple,
       gradient: "from-purple-400 to-violet-600",
     },
-    { key: "blue", label: "Blue", gradient: "from-blue-400 to-blue-600" },
-    { key: "red", label: "Red", gradient: "from-red-400 to-rose-500" },
+    { key: "blue", label: tBlue, gradient: "from-blue-400 to-blue-600" },
+    { key: "red", label: tRed, gradient: "from-red-400 to-rose-500" },
     {
       key: "orange",
-      label: "Orange",
+      label: tOrange,
       gradient: "from-orange-400 to-orange-600",
     },
-    { key: "pink", label: "Pink", gradient: "from-pink-400 to-rose-400" },
-    { key: "cyan", label: "Cyan", gradient: "from-cyan-400 to-sky-500" },
+    { key: "pink", label: tPink, gradient: "from-pink-400 to-rose-400" },
+    { key: "cyan", label: tCyan, gradient: "from-cyan-400 to-sky-500" },
     {
       key: "yellow",
-      label: "Yellow",
+      label: tYellow,
       gradient: "from-yellow-400 to-amber-500",
     },
   ] as const;
@@ -512,10 +553,44 @@ export default function SettingsDrawer({
 
         {/* Body */}
         <div className="p-5 space-y-6 overflow-y-auto h-full pb-24 text-xs">
+
+          {/* ── LANGUAGE SWITCHER ── */}
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
+              {tLanguage}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: "en", flag: "🇬🇧", label: tEnglish },
+                { key: "ne", flag: "🇳🇵", label: tNepali },
+              ] as const).map(({ key, flag, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setLocale(key)}
+                  disabled={isPending}
+                  className={`flex items-center justify-center gap-2 py-2.5 text-xs font-bold border rounded-lg transition-all ${
+                    locale === key
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
+                      : "border-gray-200 text-slate-500 hover:border-slate-300 hover:bg-gray-50"
+                  } ${isPending ? "opacity-60 cursor-wait" : ""}`}
+                >
+                  <span className="text-base">{flag}</span>
+                  <span>{label}</span>
+                  {locale === key && <span className="text-emerald-600">✓</span>}
+                </button>
+              ))}
+            </div>
+            {isPending && (
+              <p className="text-[10px] text-slate-400 mt-1.5 text-center animate-pulse">
+                {tLoading}
+              </p>
+            )}
+          </div>
+
           {/* ── COLOR SCHEME ── */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
-              Color Scheme
+              {tColorScheme}
             </label>
             <div className="grid grid-cols-2 gap-3">
               {(["light", "dark"] as const).map((mode) => (
@@ -523,19 +598,15 @@ export default function SettingsDrawer({
                   <button
                     onClick={() => setSkinMode(mode)}
                     className={`w-full aspect-[4/3] rounded-lg border-2 overflow-hidden transition-all ${
-                      skinMode === mode
-                        ? "border-indigo-500"
-                        : "border-gray-200"
+                      skinMode === mode ? "border-indigo-500" : "border-gray-200"
                     }`}
                   >
-                    {mode === "light" ? (
-                      <PreviewLight active={skinMode === mode} />
-                    ) : (
-                      <PreviewDark active={skinMode === mode} />
-                    )}
+                    {mode === "light"
+                      ? <PreviewLight active={skinMode === mode} />
+                      : <PreviewDark active={skinMode === mode} />}
                   </button>
                   <span className="text-[11px] text-slate-500 font-medium">
-                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    {mode === "light" ? tLight : tDark}
                   </span>
                 </div>
               ))}
@@ -545,7 +616,7 @@ export default function SettingsDrawer({
           {/* ── TOPBAR COLOR ── */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
-              Topbar Color
+              {tTopbarColor}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(["light", "dark", "theme"] as const).map((color) => (
@@ -575,7 +646,7 @@ export default function SettingsDrawer({
           {/* ── MENU COLOR ── */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
-              Menu Color
+              {tMenuColor}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(["light", "dark", "brand"] as const).map((color) => (
@@ -605,14 +676,14 @@ export default function SettingsDrawer({
           {/* ── SIDEBAR SIZE ── */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
-              Sidebar Size
+              {tSidebarSize}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(
                 [
-                  { key: "default", label: "Default" },
-                  { key: "compact", label: "Compact" },
-                  { key: "condensed", label: "Condensed" },
+                  { key: "default", label: tDefault },
+                  { key: "compact", label: tCompact },
+                  { key: "condensed", label: tCondensed },
                 ] as const
               ).map(({ key, label }) => (
                 <div key={key} className="flex flex-col items-center gap-1.5">
@@ -640,7 +711,7 @@ export default function SettingsDrawer({
           {/* ── DIRECTION ── */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-              Direction Change
+              {tDirection}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {(["ltr", "rtl"] as const).map((d) => (
@@ -653,7 +724,7 @@ export default function SettingsDrawer({
                       : "border-gray-200 text-slate-500"
                   }`}
                 >
-                  {d === "ltr" ? "LTR Mode" : "RTL Mode"}
+                  {d === "ltr" ? tLtr : tRtl}
                 </button>
               ))}
             </div>
@@ -760,10 +831,10 @@ export default function SettingsDrawer({
           {/* ── PRIMARY SKIN ── */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-              Primary Skin
+              {tPrimarySkin}
             </label>
 
-            {/* Preset swatches — exactly as before */}
+            {/* Preset swatches */}
             <div className="grid grid-cols-3 gap-2">
               {primarySkins.map(({ key, label, gradient }) => (
                 <div key={key} className="flex flex-col items-center gap-1">
@@ -817,7 +888,7 @@ export default function SettingsDrawer({
 
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold text-slate-600 leading-tight">
-                    {primarySkin === "custom" ? "Custom" : "Pick a color"}
+                    {primarySkin === "custom" ? tCustom : tPickAColor}
                   </p>
                   <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wide">
                     {customColor}
@@ -847,7 +918,7 @@ export default function SettingsDrawer({
                 />
                 {primarySkin === "custom" && (
                   <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
-                    Active
+                    {tActive}
                   </span>
                 )}
               </div>
@@ -866,7 +937,7 @@ export default function SettingsDrawer({
                   className="group-hover:rotate-[-45deg] transition-transform duration-300"
                 />
               </div>
-              Reset Settings
+              {tResetSettings}
             </button>
 
             <button
@@ -876,7 +947,7 @@ export default function SettingsDrawer({
               <div className="p-1 rounded bg-slate-100 group-hover:bg-amber-100 transition-colors">
                 <KeyRound size={14} />
               </div>
-              Change Password
+              {tChangePassword}
             </button>
 
             <button
@@ -886,16 +957,14 @@ export default function SettingsDrawer({
               <div className="p-1 rounded bg-rose-50 group-hover:bg-rose-100 transition-colors">
                 <LogOut size={14} />
               </div>
-              Logout
+              {tLogout}
             </button>
           </div>
         </div>
       </div>
 
       {/* Change Password Modal */}
-    <ChangePassword isOpen={isPassModalOpen} onClose={() => setIsPassModalOpen(false)} />
-
-
+      <ChangePassword isOpen={isPassModalOpen} onClose={() => setIsPassModalOpen(false)} />
     </>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { Save, Loader2, X, Wallet, UserCheck, Tag, IndianRupee, Calendar, ClipboardList } from "lucide-react";
+import { Save, Loader2, X, Wallet, UserCheck, Tag, IndianRupee, Calendar } from "lucide-react";
 import { Form, FormItem } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { useTheme } from "@/lib/context/ThemeContext";
@@ -31,6 +31,7 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
   const { primaryColor } = useTheme();
   const { loggedInUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [fetchingFees, setFetchingFees] = useState(false);
 
   const [options, setOptions] = useState({ 
     enrollments: [] as any[], 
@@ -51,70 +52,78 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
 
   const { setValue, watch, control, handleSubmit, reset } = form;
 
-  // Watch fields for auto-calculation
+  // Watchers
+  const watchedEnrollment = watch("enrollment");
   const watchedFeeType = watch("fee_type");
   const watchedTotal = watch("total_amount");
   const watchedPaid = watch("paid_amount");
 
- useEffect(() => {
-    if (watchedFeeType && options.feeTypes.length > 0 && !isUpdate) {
-      const selected = options.feeTypes.find((f: any) => f.id === watchedFeeType);
-      if (selected) {
-        setValue("total_amount", Number(selected.amount) || 0);
-      }
+  // १. Fee Types तान्ने Function (useCallback प्रयोग गरिएको छ)
+  const fetchFilteredFeeTypes = useCallback(async (studentEnrollmentId: any) => {
+    if (!studentEnrollmentId) return;
+    
+    console.log("🚀 API Call Triggered for ID:", studentEnrollmentId); // Debugging
+    setFetchingFees(true);
+    
+    try {
+      const response = await FeeServices.getAllFeeStructures({ student_id: studentEnrollmentId });
+      const results = response.results || response;
+      
+      setOptions(prev => ({
+        ...prev,
+        feeTypes: Array.isArray(results) ? results : [],
+      }));
+    } catch (err) {
+      console.error("API Error:", err);
+      toast.error("शुल्क लोड गर्न सकिएन।");
+    } finally {
+      setFetchingFees(false);
     }
-  }, [watchedFeeType, options.feeTypes, setValue, isUpdate]);
+  }, []);
 
-  // Auto-update status logic
+  // २. विद्यार्थी परिवर्तनको Watcher (यसले गर्दा API Call छुट्दैन) 🔥
   useEffect(() => {
-    const total = Number(watchedTotal) || 0;
-    const paid = Number(watchedPaid) || 0;
-    if (total > 0) {
-      if (paid >= total) setValue("status", "paid");
-      else if (paid > 0 && paid < total) setValue("status", "partial");
-      else setValue("status", "unpaid");
+    if (watchedEnrollment && isOpen) {
+      fetchFilteredFeeTypes(watchedEnrollment);
     }
-  }, [watchedTotal, watchedPaid, setValue]);
+  }, [watchedEnrollment, fetchFilteredFeeTypes, isOpen]);
 
-  
-  // 2. Auto-update Status based on amounts
+  // ३. सुरुमा Enrollment List तान्ने
   useEffect(() => {
-    const total = Number(watchedTotal) || 0;
-    const paid = Number(watchedPaid) || 0;
-
-    if (total > 0) {
-      if (paid >= total) {
-        setValue("status", "paid");
-      } else if (paid > 0 && paid < total) {
-        setValue("status", "partial");
-      } else {
-        setValue("status", "unpaid");
-      }
-    }
-  }, [watchedTotal, watchedPaid, setValue]);
-
-  useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [enr, fType] = await Promise.all([
-          EnrollmentServices.getAllEnrollments(),
-          FeeServices.getAllFeeTypes(),
-        ]);
-        setOptions({
+        const enr = await EnrollmentServices.getAllEnrollments();
+        setOptions(prev => ({
+          ...prev,
           enrollments: enr.results || enr,
-          feeTypes: fType.results || fType,
-        });
+        }));
       } catch (err) {
-        toast.error("Failed to load dependency data");
+        toast.error("Enrollment data could not be loaded.");
       }
     };
-    if (isOpen) fetchData();
+    if (isOpen) fetchInitialData();
   }, [isOpen]);
 
+  const handleModalClose = () => {
+  reset({
+    enrollment: null,
+    fee_type: null,
+    total_amount: 0,
+    paid_amount: 0,
+    due_date: null,
+    status: 'unpaid',
+    school: ""
+  }); // फर्मका भ्यालुहरू रिसेट गर्छ
+  onClose(); // मोडल बन्द गर्छ
+};
+
+  // ४. Edit Mode logic
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && initialData) {
+      const enrollmentId = initialData?.enrollment?.id || initialData?.enrollment || null;
+      
       reset({
-        enrollment: initialData?.enrollment?.id || initialData?.enrollment || null,
+        enrollment: enrollmentId,
         fee_type: initialData?.fee_type?.id || initialData?.fee_type || null,
         total_amount: Number(initialData?.total_amount) || 0,
         paid_amount: Number(initialData?.paid_amount) || 0,
@@ -125,26 +134,47 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
     }
   }, [initialData, isOpen, loggedInUser, reset]);
 
+  // ५. Fee Type सेलेक्ट गर्दा Amount सेट गर्ने
+  useEffect(() => {
+    if (watchedFeeType && options.feeTypes.length > 0 && !isUpdate) {
+      const selected = options.feeTypes.find((f: any) => f.fee_type == watchedFeeType);
+      if (selected) {
+        setValue("total_amount", Number(selected.amount) || 0);
+      }
+    }
+  }, [watchedFeeType, options.feeTypes, setValue, isUpdate]);
+
+  // ६. Status Auto-calculation
+  useEffect(() => {
+    const total = Number(watchedTotal) || 0;
+    const paid = Number(watchedPaid) || 0;
+    if (total > 0) {
+      if (paid >= total) setValue("status", "paid");
+      else if (paid > 0 && paid < total) setValue("status", "partial");
+      else setValue("status", "unpaid");
+    }
+  }, [watchedTotal, watchedPaid, setValue]);
+
   const onSubmit = async (values: StudentFeeFormValues) => {
     setLoading(true);
     const payload = {
       ...values,
+      fee_type: Number(values.fee_type),
+      enrollment: Number(values.enrollment),
       due_date: values.due_date ? values.due_date.format("YYYY-MM-DD") : null,
     };
-    
+    console.log("Submitting Payload:", payload);
     try {
       if (isUpdate) {
         await FeeServices.updateStudentFees(initialData.id, payload);
       } else {
         await FeeServices.createStudentFees(payload);
       }
-      
       toast.success(isUpdate ? "Fee record updated" : "Student fee assigned successfully");
       onSuccess(); 
       onClose();
     } catch (err: any) {
-      const errorMsg = err.response?.data?.non_field_errors?.[0] || "Error occurred while saving fee";
-      toast.error(errorMsg);
+      toast.error("Error occurred while saving fee");
     } finally { 
       setLoading(false); 
     }
@@ -163,7 +193,7 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                 <Wallet size={15} style={{ color: primaryColor }} />
                 {isUpdate ? "Edit Student Fee" : "Assign Student Fee"}
               </h2>
-              <button onClick={onClose} className="text-red-500 hover:rotate-90 transition-transform">
+              <button onClick={handleModalClose} className="text-red-500 hover:rotate-90 transition-transform">
                 <X size={20} />
               </button>
             </div>
@@ -187,9 +217,16 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                           className="w-full h-[35px]" 
                           placeholder="Select Student"
                           optionFilterProp="label"
+                          // यहाँ onChange मा पुरानो डाटा Clear गर्ने 🔥
+                          onChange={(value) => {
+                            field.onChange(value);
+                            setOptions(prev => ({ ...prev, feeTypes: [] })); // Clear list
+                            setValue("fee_type", null);
+                            setValue("total_amount", 0);
+                          }}
                           options={options.enrollments.map((e: any) => ({ 
                             value: e.id, 
-                            label: `${e.student_name} (${e.roll_no || 'No Roll'})` 
+                            label: `${e.student_name} (R.N: ${e.roll_number || 'N/A'}) - Class: ${e.class_name}` 
                           }))} 
                         />
                       )} 
@@ -208,10 +245,14 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                         <Select 
                           {...field} 
                           className="w-full h-[35px]" 
-                          placeholder="Select Type"
+                          placeholder={fetchingFees ? "Loading..." : "Select Fee Type"}
+                          optionFilterProp="label" 
+                          loading={fetchingFees}
+                          disabled={fetchingFees}
+                          showSearch
                           options={options.feeTypes.map((f: any) => ({ 
-                            value: f.id, 
-                            label: f.name 
+                            value: f.fee_type,
+                            label: `${f.fee_type_name} - Rs. ${f.amount}` 
                           }))} 
                         />
                       )} 
@@ -262,39 +303,14 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                           className="w-full h-[33px]"
                           format="YYYY-MM-DD"
                           allowClear
-                          panelRender={(panelNode) => (
-                            <div style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133.33%", marginBottom: "-80px", marginRight: "-65px" }}>
-                              {panelNode}
-                            </div>
-                          )}
-                        />                      )} 
-                    />
-                  </FormItem>
-
-                  {/* <FormItem>
-                    <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
-                      <ClipboardList size={12} className="text-slate-500" /> Payment Status
-                    </label>
-                    <Controller 
-                      name="status" 
-                      control={control} 
-                      render={({ field }) => (
-                        <Select 
-                          {...field} 
-                          className="w-full h-[35px]" 
-                          options={[
-                            { value: 'unpaid', label: 'Unpaid' },
-                            { value: 'partial', label: 'Partial' },
-                            { value: 'paid', label: 'Paid' },
-                          ]} 
                         />
                       )} 
                     />
-                  </FormItem> */}
+                  </FormItem>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                  <CancelButton onClick={onClose} disabled={loading} />
+                  <CancelButton onClick={handleModalClose} disabled={loading} />
                   <ThemedButton type="submit" size="sm" disabled={loading}>
                     <div className="flex items-center gap-2">
                       {loading ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
@@ -304,7 +320,6 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                 </div>
               </form>
             </Form>
-
           </ConfigProvider>
         </div>
       </div>

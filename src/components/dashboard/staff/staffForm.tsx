@@ -111,7 +111,7 @@ export default function StaffForm({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > 5 * 1024 * 1024) {
         toast.error("Image size should be less than 2MB");
         return;
       }
@@ -263,7 +263,7 @@ export default function StaffForm({
                     />
                   </div>
                   <p className="text-[11px] text-gray-400 mt-2">
-                    Upload Profile Photo (Max 2MB)
+                    Upload Profile Photo (Max 5MB)
                   </p>
                 </div>
 

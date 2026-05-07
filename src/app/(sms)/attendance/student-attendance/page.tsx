@@ -9,6 +9,7 @@ import StudentAttendanceTable from "@/components/dashboard/attendance/studentAtt
 import BulkAttendanceForm from "@/components/dashboard/attendance/bulkStudentAttendanceForm";
 import { Select, DatePicker } from "antd";
 import dayjs from "dayjs";
+import StudentAttendanceForm from "@/components/dashboard/attendance/studentAttendanceForm";
 
 const { RangePicker } = DatePicker;
 
@@ -197,12 +198,12 @@ export default function AttendancePage() {
       />
 
       {/* Modals */}
-      {/* <StudentAttendanceForm
+      <StudentAttendanceForm
         isOpen={isModalOpen}
         initialData={editData}
         onClose={handleCloseSingle}
         onSuccess={handleSuccess}
-      /> */}
+      />
       <BulkAttendanceForm
         isOpen={isBulkOpen}
         onClose={() => setIsBulkOpen(false)}

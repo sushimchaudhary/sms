@@ -12,10 +12,11 @@ import {
   Fingerprint, CalendarDays, Hash,
 } from "lucide-react";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
 
 function resolvePhoto(photo?: string | null): string {
   if (!photo) return "";
+   if (photo.startsWith("http://") || photo.startsWith("https://")) return photo;
   return photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
 }
 
@@ -198,61 +199,104 @@ function PhotoUploadCard({
 };
 
   return (
+    // <div className="bg-white rounded shadow-sm border border-gray-100 p-2">
+    //   <h2 className="text-[12px] font-bold text-gray-800 mb-1 flex items-center gap-2">
+    //     <Camera size={14} style={{ color: primaryColor }} />  Profile photo
+    //   </h2>
+
+    //   {!preview ? (
+    //     <div
+    //       onClick={() => fileRef.current?.click()}
+    //       onDragOver={e => { e.preventDefault(); setDragging(true); }}
+    //       onDragLeave={() => setDragging(false)}
+    //       onDrop={handleDrop}
+    //       className="relative rounded border-2 border-dashed p-2 text-center disabled:opacity-200 transition-all duration-200 select-none"
+    //       style={{ borderColor: dragging ? primaryColor : primaryColor + "50", backgroundColor: dragging ? primaryColor + "10" : primaryColor + "05" }}
+    //     >
+    //       {currentPhoto && (
+    //         <div className="flex justify-center mb-2">
+    //           <img src={currentPhoto} alt="current" className="w-20 h-20 rounded-full object-cover border-4" style={{ borderColor: primaryColor + "40" }} />
+    //         </div>
+    //       )}
+    //       {/* <p className="text-[13px] font-bold mb-1" style={{ color: primaryColor }}>
+    //         {currentPhoto ? "Click or drag to replace photo" : "Click or drag to upload photo"}
+    //       </p> */}
+    //       {/* <p className="text-[11px] text-gray-400">JPG, PNG, WEBP · Max 5 MB</p>
+    //       {dragging && (
+    //         <div className="absolute inset-0 rounded flex items-center justify-center" style={{ backgroundColor: primaryColor + "15" }}>
+    //           <p className="text-[13px] font-black" style={{ color: primaryColor }}>Drop to select</p>
+    //         </div>
+    //       )} */}
+    //     </div>
+    //   ) : (
+    //     <div className="flex flex-col items-center gap-4">
+    //       <div className="relative">
+    //         <img src={preview} alt="Preview" className="w-24 h-24 rounded-full object-cover border-4" style={{ borderColor: primaryColor }} />
+    //         <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+    //           <ImageIcon size={12} className="text-white" />
+    //         </div>
+    //       </div>
+    //       <div className="text-center">
+    //         <p className="text-[12px] font-bold text-gray-700 truncate max-w-[180px]">{file?.name}</p>
+    //         <p className="text-[10px] text-gray-400 mt-0.5">{file ? (file.size / 1024).toFixed(0) + " KB" : ""}</p>
+    //       </div>
+    //       <div className="flex gap-2 w-full">
+    //         <button onClick={handleCancel} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-gray-200 text-[12px] font-bold text-gray-500 hover:bg-gray-50 transition-colors">
+    //           <X size={12} /> Cancel
+    //         </button>
+    //         <button onClick={handleSave} disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-white text-[12px] font-black transition-all hover:opacity-90 disabled:opacity-60" style={{ backgroundColor: primaryColor }}>
+    //           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+    //           {saving ? "Saving…" : "Save Photo"}
+    //         </button>
+    //       </div>
+    //     </div>
+    //   )}
+
+    //   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleInput} />
+    // </div>
+
     <div className="bg-white rounded shadow-sm border border-gray-100 p-2">
-      <h2 className="text-[12px] font-bold text-gray-800 mb-1 flex items-center gap-2">
-        <Camera size={14} style={{ color: primaryColor }} /> Change profile photo
-      </h2>
+  <h2 className="text-[12px] font-bold text-gray-800 mb-1 flex items-center gap-2">
+    <Camera size={14} style={{ color: primaryColor }} /> Profile photo
+  </h2>
 
-      {!preview ? (
-        <div
-          onClick={() => fileRef.current?.click()}
-          onDragOver={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          className="relative rounded border-2 border-dashed p-2 text-center cursor-pointer transition-all duration-200 select-none"
-          style={{ borderColor: dragging ? primaryColor : primaryColor + "50", backgroundColor: dragging ? primaryColor + "10" : primaryColor + "05" }}
-        >
-          {currentPhoto && (
-            <div className="flex justify-center mb-2">
-              <img src={currentPhoto} alt="current" className="w-20 h-20 rounded-full object-cover border-4" style={{ borderColor: primaryColor + "40" }} />
-            </div>
-          )}
-          <p className="text-[13px] font-bold mb-1" style={{ color: primaryColor }}>
-            {currentPhoto ? "Click or drag to replace photo" : "Click or drag to upload photo"}
-          </p>
-          <p className="text-[11px] text-gray-400">JPG, PNG, WEBP · Max 5 MB</p>
-          {dragging && (
-            <div className="absolute inset-0 rounded flex items-center justify-center" style={{ backgroundColor: primaryColor + "15" }}>
-              <p className="text-[13px] font-black" style={{ color: primaryColor }}>Drop to select</p>
-            </div>
-          )}
+  <div
+    className="relative rounded border-2 border-dashed p-2 text-center select-none"
+    style={{ 
+      borderColor: primaryColor + "20", // Faded border since it's inactive
+      backgroundColor: primaryColor + "05",
+      cursor: "not-allowed" // Visual cue that it's disabled
+    }}
+  >
+    {currentPhoto ? (
+      <div className="flex flex-col items-center justify-center py-2">
+        <div className="flex justify-center mb-2">
+          <img 
+            src={currentPhoto} 
+            alt="current" 
+            className="w-20 h-20 rounded-full object-cover border-4 opacity-80" 
+            style={{ borderColor: primaryColor + "40" }} 
+          />
         </div>
-      ) : (
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <img src={preview} alt="Preview" className="w-24 h-24 rounded-full object-cover border-4" style={{ borderColor: primaryColor }} />
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
-              <ImageIcon size={12} className="text-white" />
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-[12px] font-bold text-gray-700 truncate max-w-[180px]">{file?.name}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{file ? (file.size / 1024).toFixed(0) + " KB" : ""}</p>
-          </div>
-          <div className="flex gap-2 w-full">
-            <button onClick={handleCancel} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-gray-200 text-[12px] font-bold text-gray-500 hover:bg-gray-50 transition-colors">
-              <X size={12} /> Cancel
-            </button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-white text-[12px] font-black transition-all hover:opacity-90 disabled:opacity-60" style={{ backgroundColor: primaryColor }}>
-              {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-              {saving ? "Saving…" : "Save Photo"}
-            </button>
-          </div>
-        </div>
-      )}
+        
+        {/* Admin only message */}
+        <p className="text-[11px] font-medium text-gray-500 italic">
+          Only admin can change profile photo
+        </p>
+      </div>
+    ) : (
+      <div className="py-4">
+        <p className="text-[11px] text-gray-400">No profile photo set</p>
+        <p className="text-[10px] font-bold mt-1" style={{ color: primaryColor + "80" }}>
+          (Admin access required)
+        </p>
+      </div>
+    )}
+  </div>
 
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleInput} />
-    </div>
+  {/* Hidden input stays, but will never be triggered because fileRef.current?.click() is removed */}
+  <input ref={fileRef} type="file" accept="image/*" className="hidden" disabled />
+</div>
   );
 }
 
@@ -265,12 +309,13 @@ export default function StudentProfilePage() {
   const [error,     setError]     = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"profile" | "assignments">("profile");
   const [toast,     setToast]     = useState<{ msg: string; type: "success" | "error" } | null>(null);
-
   const [studentInfo, setStudentInfo] = useState<StudentDashboardResponse["student"] | null>(null);
   const [enrollment,  setEnrollment]  = useState<StudentDashboardResponse["enrollment"]>(null);
   const [homeworks,   setHomeworks]   = useState<Homework[]>([]);
   const [notes,       setNotes]       = useState<Note[]>([]);
 
+
+  
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
@@ -425,7 +470,7 @@ export default function StudentProfilePage() {
                     {loading
                       ? <Sk h={38} r={999} />
                       : (
-                        <div className="px-4 py-2 rounded-full bg-gray-50 border border-gray-100 text-[13px] font-medium text-gray-700">
+                        <div className="px-4 py-1 rounded-full bg-gray-50 border border-gray-100 text-[13px] font-medium text-gray-700">
                           {value}
                         </div>
                       )
@@ -435,16 +480,16 @@ export default function StudentProfilePage() {
               </div>
 
               {/* Enrollment details */}
-              <h2 className="text-[14px] font-black text-gray-800 mt-5 mb-3 flex items-center gap-2">
-                <School size={14} style={{ color: primaryColor }} /> Enrollment Details
+              <h2 className="text-[14px] font-black text-gray-800 mt-4 mb-4 flex items-center gap-2">
+                <School size={14} style={{ color: primaryColor }} /> Class & Roll
               </h2>
               <div className="space-y-2">
                 {([
                   { label: "Class",           value: className,   icon: School },
                   { label: "Section",         value: sectionName, icon: Layers },
                   { label: "Roll Number",     value: rollNo,      icon: Hash },
-                  { label: "Enrollment Code", value: enrollCode,  icon: Fingerprint },
-                  { label: "Session",         value: sessionName, icon: CalendarDays },
+                  // { label: "Enrollment Code", value: enrollCode,  icon: Fingerprint },
+                  // { label: "Session",         value: sessionName, icon: CalendarDays },
                 ] as const).map(({ label, value, icon: Icon }) => (
                   <div key={label}>
                     <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-1">
@@ -453,7 +498,7 @@ export default function StudentProfilePage() {
                     {loading
                       ? <Sk h={38} r={999} />
                       : (
-                        <div className="px-4 py-2 rounded-full bg-gray-50 border border-gray-100 text-[13px] font-medium text-gray-700">
+                        <div className="px-4 py-1 rounded-full bg-gray-50 border border-gray-100 text-[13px] font-medium text-gray-700">
                           {value}
                         </div>
                       )
@@ -480,7 +525,7 @@ export default function StudentProfilePage() {
 
               {/* Account info card */}
               <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
-                <h2 className="text-[14px] font-black text-gray-800 mb-3 flex items-center gap-2">
+                <h2 className="text-[14px] font-black text-gray-800 mb-2 flex items-center gap-2">
                   <Shield size={14} style={{ color: primaryColor }} /> Account Info
                 </h2>
                 <div className="space-y-1">
@@ -492,9 +537,9 @@ export default function StudentProfilePage() {
                         { label: "Roll No.",    value: rollNo,                          icon: Hash },
                         { label: "Session",     value: sessionName,                     icon: CalendarDays },
                       ] as const).map(({ label, value, icon: Icon }) => (
-                        <div key={label} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                        <div key={label} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: primaryColor + "12" }}>
-                            <Icon size={13} style={{ color: primaryColor }} />
+                            <Icon size={11} style={{ color: primaryColor }} />
                           </div>
                           <div className="min-w-0">
                             <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">{label}</p>

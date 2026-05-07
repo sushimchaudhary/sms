@@ -136,8 +136,8 @@ export default function StudentForm({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image size should be less than 2MB");
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
         return;
       }
   
@@ -301,7 +301,7 @@ export default function StudentForm({
                       onChange={handleFileChange}
                     />
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-2">Upload Profile Photo (Max 2MB)</p>
+                  <p className="text-[11px] text-gray-400 mt-2">Upload Profile Photo (Max 5MB)</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

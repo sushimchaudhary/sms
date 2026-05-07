@@ -412,8 +412,8 @@ export default function SettingsDrawer({
   const tMenuColor      = useT("menuColor");
   const tSidebarSize    = useT("sidebarSize");
   const tDirection      = useT("direction");
-  const tLtr            = useT("ltr");
-  const tRtl            = useT("rtl");
+  const tLtr            = useT("LTR");
+  const tRtl            = useT("RTL");
   const tDefault        = useT("default");
   const tCompact        = useT("compact");
   const tCondensed      = useT("condensed");
@@ -421,9 +421,9 @@ export default function SettingsDrawer({
   const tCustom         = useT("custom");
   const tPickAColor     = useT("pickAColor");
   const tActive         = useT("active");
-  const tResetSettings  = useT("resetSettings");
-  const tChangePassword = useT("changePassword");
-  const tLogout         = useT("logout");
+  const tResetSettings  = useT("Reset Settings");
+  const tChangePassword = useT("Change Password");
+  const tLogout         = useT("Log Out");
   // Skin label translations
   const tDefault2       = useT("Default");
   const tBlueLight      = useT("Blue Light");
@@ -561,7 +561,7 @@ export default function SettingsDrawer({
             </label>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { key: "en", flag: "🇬🇧", label: tEnglish },
+                { key: "en", flag: "En", label: tEnglish },
                 { key: "ne", flag: "🇳🇵", label: tNepali },
               ] as const).map(({ key, flag, label }) => (
                 <button

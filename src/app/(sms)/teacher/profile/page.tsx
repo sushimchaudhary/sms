@@ -5,10 +5,10 @@ import { useTheme } from "@/lib/context/ThemeContext";
 import useAuth from "@/lib/hooks/useAuth";
 import { TeacherServices } from "@/services/teacherServices";
 import {
-  Mail, Shield, Camera,  Save, X, 
+  Mail, Shield, Camera, Save, X,
   CheckCircle2, AlertCircle, Loader2, Hash, School,
-  Layers, BookOpen, FileText, ExternalLink, 
-  User,  ImageIcon,
+  Layers, BookOpen, FileText, ExternalLink,
+  User, ImageIcon,
 } from "lucide-react";
 
 // ─── Backend types ─────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ interface TeacherDashboardResponse {
     dob?: string;
     created_at?: string;
   };
-  assignments: { class: string; section: string; subject: string }[];
+  assignments: { class: string; section: string | null; subject: string }[]; // ✅ section can be null
   recent_homeworks: Homework[];
   recent_notes: Note[];
 }
@@ -119,9 +119,9 @@ function PhotoUploadCard({
   teacherId: number;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview]   = useState<string | null>(null);
-  const [file,    setFile]      = useState<File | null>(null);
-  const [saving,  setSaving]    = useState(false);
+  const [preview,  setPreview]  = useState<string | null>(null);
+  const [file,     setFile]     = useState<File | null>(null);
+  const [saving,   setSaving]   = useState(false);
   const [dragging, setDragging] = useState(false);
 
   const pickFile = (f: File) => {
@@ -133,14 +133,9 @@ function PhotoUploadCard({
     reader.readAsDataURL(f);
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]; if (f) pickFile(f);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault(); setDragging(false);
-    const f = e.dataTransfer.files?.[0]; if (f) pickFile(f);
-  };
+  const handleInput   = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) pickFile(f); };
+  const handleDrop    = (e: React.DragEvent) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) pickFile(f); };
+  const handleCancel  = () => { setPreview(null); setFile(null); if (fileRef.current) fileRef.current.value = ""; };
 
   const handleSave = async () => {
     if (!file) return;
@@ -150,9 +145,7 @@ function PhotoUploadCard({
       fd.append("photo", file);
       const res = await TeacherServices.updateTeacher(teacherId, fd);
       onSaved(res?.photo || preview || "");
-      setPreview(null);
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
+      handleCancel();
       onToast("Profile photo updated!", "success");
     } catch {
       onToast("Failed to update photo", "error");
@@ -161,95 +154,68 @@ function PhotoUploadCard({
     }
   };
 
-  const handleCancel = () => {
-    setPreview(null);
-    setFile(null);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
   return (
-    <div className="bg-white rounded shadow-sm border border-gray-100 p-2">
-      <h2 className="text-[12px] font-bold text-gray-800 mb-1 flex items-center gap-2">
-        <Camera size={14} style={{ color: primaryColor }} />You can change profile photo
+    <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
+      <h2 className="text-[12px] font-bold text-gray-800 mb-3 flex items-center gap-2">
+        <Camera size={14} style={{ color: primaryColor }} /> Change Profile Photo
       </h2>
 
       {!preview ? (
-        /* ── Drop zone ── */
         <div
           onClick={() => fileRef.current?.click()}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
-          className="relative rounded border-2 border-dashed p-2 text-center cursor-pointer transition-all duration-200 select-none"
+          className="relative rounded border-2 border-dashed p-4 text-center cursor-pointer transition-all duration-200 select-none"
           style={{
             borderColor:     dragging ? primaryColor : primaryColor + "50",
             backgroundColor: dragging ? primaryColor + "10" : primaryColor + "05",
           }}
         >
-          {/* Current photo thumbnail */}
           {currentPhoto && (
-            <div className="flex justify-center mb-2">
+            <div className="flex justify-center mb-3">
               <img
                 src={currentPhoto} alt="current"
-                className="w-20 h-20 rounded-full object-cover border-4"
+                className="w-16 h-16 rounded-full object-cover border-4"
                 style={{ borderColor: primaryColor + "40" }}
               />
             </div>
           )}
-
-          
-
-          <p className="text-[13px] font-bold mb-1" style={{ color: primaryColor }}>
-            {currentPhoto ? "Click or drag to replace photo" : "Click or drag to upload photo"}
+          <p className="text-[12px] font-bold mb-1" style={{ color: primaryColor }}>
+            {currentPhoto ? "Click or drag to replace" : "Click or drag to upload"}
           </p>
-          <p className="text-[11px] text-gray-400">JPG, PNG, WEBP · Max 5 MB</p>
-
+          <p className="text-[10px] text-gray-400">JPG, PNG, WEBP · Max 5 MB</p>
           {dragging && (
-            <div
-              className="absolute inset-0 rounded flex items-center justify-center"
-              style={{ backgroundColor: primaryColor + "15" }}
-            >
+            <div className="absolute inset-0 rounded flex items-center justify-center" style={{ backgroundColor: primaryColor + "15" }}>
               <p className="text-[13px] font-black" style={{ color: primaryColor }}>Drop to select</p>
             </div>
           )}
         </div>
       ) : (
-        /* ── Preview ── */
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-3">
           <div className="relative">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-24 h-24 rounded-full object-cover border-4"
-              style={{ borderColor: primaryColor }}
-            />
-            <div
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <ImageIcon size={12} className="text-white" />
+            <img src={preview} alt="Preview" className="w-20 h-20 rounded-full object-cover border-4" style={{ borderColor: primaryColor }} />
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+              <ImageIcon size={11} className="text-white" />
             </div>
           </div>
-
           <div className="text-center">
-            <p className="text-[12px] font-bold text-gray-700 truncate max-w-[180px]">{file?.name}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{file ? (file.size / 1024).toFixed(0) + " KB" : ""}</p>
+            <p className="text-[11px] font-bold text-gray-700 truncate max-w-[180px]">{file?.name}</p>
+            <p className="text-[10px] text-gray-400">{file ? (file.size / 1024).toFixed(0) + " KB" : ""}</p>
           </div>
-
           <div className="flex gap-2 w-full">
             <button
               onClick={handleCancel}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-gray-200 text-[12px] font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full border border-gray-200 text-[11px] font-bold text-gray-500 hover:bg-gray-50 transition-colors"
             >
-              <X size={12} /> Cancel
+              <X size={11} /> Cancel
             </button>
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-white text-[12px] font-black transition-all hover:opacity-90 disabled:opacity-60"
+              onClick={handleSave} disabled={saving}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-white text-[11px] font-black transition-all hover:opacity-90 disabled:opacity-60"
               style={{ backgroundColor: primaryColor }}
             >
-              {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
               {saving ? "Saving…" : "Save Photo"}
             </button>
           </div>
@@ -268,23 +234,21 @@ export default function TeacherProfilePage() {
 
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [editMode,   setEditMode]   = useState(false);
-  const [activeTab,  setActiveTab]  = useState<"profile" | "assignments" | "security">("profile");
+  const [activeTab,  setActiveTab]  = useState<"profile" | "assignments">("profile");
   const [toast,      setToast]      = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [error,      setError]      = useState<string | null>(null);
 
-  const [teacherInfo,  setTeacherInfo]  = useState<TeacherDashboardResponse["teacher"] | null>(null);
-  const [assignments,  setAssignments]  = useState<TeacherDashboardResponse["assignments"]>([]);
-  const [homeworks,    setHomeworks]    = useState<Homework[]>([]);
-  const [notes,        setNotes]        = useState<Note[]>([]);
+  const [teacherInfo, setTeacherInfo] = useState<TeacherDashboardResponse["teacher"] | null>(null);
+  const [assignments, setAssignments] = useState<TeacherDashboardResponse["assignments"]>([]);
+  const [homeworks,   setHomeworks]   = useState<Homework[]>([]);
+  const [notes,       setNotes]       = useState<Note[]>([]);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "" });
 
-  
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchDashboard = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
+    if (!isRefresh) setLoading(true);
     setError(null);
     try {
       const dash: TeacherDashboardResponse = await TeacherServices.getTeacherDashboard();
@@ -302,71 +266,52 @@ export default function TeacherProfilePage() {
       setError(e?.message || "Failed to load profile");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
-  // ── Photo saved callback ────────────────────────────────────────────────────
-  // Updates the local teacher info with new photo URL without full refetch
   const handlePhotoSaved = (newPhotoUrl: string) => {
     setTeacherInfo(prev => prev ? { ...prev, photo: newPhotoUrl } : prev);
-    // Also bust the dashboard cache so next hard refresh shows new photo
     TeacherServices.clearCache?.();
   };
 
-  
+  // ── Derived — ✅ FIX: filter(Boolean) removes null sections ────────────────
+  const uniqueClasses  = [...new Set(assignments.map(a => a.class).filter(Boolean))];
+  const uniqueSubjects = [...new Set(assignments.map(a => a.subject).filter(Boolean))];
+  const uniqueSections = [...new Set(assignments.map(a => a.section).filter(Boolean))]; // ✅ null filtered out
 
-  // ── Derived ─────────────────────────────────────────────────────────────────
-  const uniqueClasses  = [...new Set(assignments.map(a => a.class))];
-  const uniqueSubjects = [...new Set(assignments.map(a => a.subject))];
-  const uniqueSections = [...new Set(assignments.map(a => a.section))];
-
-  // ── Rounded input style helpers ─────────────────────────────────────────────
   const inputBase =
-    "w-full px-4 py-1 rounded-full border text-[13px] font-medium text-gray-700 focus:outline-none transition-all bg-white";
+    "w-full px-4 py-2.5 rounded-full border text-[13px] font-medium text-gray-700 focus:outline-none transition-all bg-white";
 
   return (
     <div className="min-h-screen">
-      <div className="space-y-2">
+      <div className="space-y-3">
 
         {/* ══ HERO ══════════════════════════════════════════════════════════ */}
         <div
           className="relative rounded overflow-hidden shadow-lg"
-          style={{
-            background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 60%, ${primaryColor}88 100%)`,
-          }}
+          style={{ background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 60%, ${primaryColor}88 100%)` }}
         >
-          {/* decorative blobs */}
           <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/[0.07] pointer-events-none" />
           <div className="absolute top-8 -right-4 w-32 h-32 rounded-full bg-white/[0.06] pointer-events-none" />
           <div className="absolute -bottom-12 left-28 w-48 h-48 rounded-full bg-white/[0.05] pointer-events-none" />
 
-          <div className="relative py-3 px-2 flex flex-col sm:flex-row items-center sm:items-end gap-5">
-            {/* Avatar — clicking opens file picker only when NOT in edit mode (text edit) */}
-            <div className="relative shrink-0">
+          <div className="relative py-5 px-5 flex flex-col sm:flex-row items-center sm:items-end gap-5">
+            {/* <div className="relative shrink-0">
               <div className="rounded-full p-1 bg-white/20 backdrop-blur-sm">
                 {loading ? (
                   <div className="rounded-full bg-white/20" style={{ width: 96, height: 96 }} />
                 ) : (
-                  <UserAvatar
-                    name={teacherInfo?.name || "Teacher"}
-                    photo={teacherInfo?.photo || null}
-                    size={96}
-                  />
+                  <UserAvatar name={teacherInfo?.name || "Teacher"} photo={teacherInfo?.photo || null} size={96} />
                 )}
               </div>
-            </div>
+            </div> */}
 
-            {/* Name + badges */}
             <div className="flex-1 text-center sm:text-left pb-1">
               <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Teacher Profile</p>
               {loading ? (
-                <>
-                  <Sk w={200} h={28} r={999} />
-                  <div className="mt-2"><Sk w={160} h={14} r={999} /></div>
-                </>
+                <><Sk w={200} h={28} r={999} /><div className="mt-2"><Sk w={160} h={14} r={999} /></div></>
               ) : (
                 <>
                   <h1 className="text-white text-2xl font-black tracking-tight leading-tight">
@@ -392,16 +337,15 @@ export default function TeacherProfilePage() {
                 </>
               )}
             </div>
-
           </div>
 
-          {/* Stats strip */}
+          {/* Stats strip — ✅ FIX: uniqueSections.length now shows 0 when all null */}
           {!loading && (
             <div className="relative border-t border-white/10 grid grid-cols-3 divide-x divide-white/10">
               {[
                 { label: "Classes",  value: uniqueClasses.length },
                 { label: "Subjects", value: uniqueSubjects.length },
-                { label: "Sections", value: uniqueSections.length },
+                { label: "Sections", value: uniqueSections.length }, // ✅ correct: 0 when null
               ].map(({ label, value }) => (
                 <div key={label} className="py-3 text-center">
                   <p className="text-white text-lg font-black tabular-nums">{value}</p>
@@ -414,12 +358,10 @@ export default function TeacherProfilePage() {
 
         {/* ── Error ── */}
         {error && (
-          <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-full px-5 py-3">
+          <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded px-5 py-3">
             <AlertCircle size={14} className="text-rose-500 shrink-0" />
             <p className="text-xs text-rose-700 flex-1">{error}</p>
-            <button onClick={() => fetchDashboard()} className="text-[11px] font-bold text-rose-500 underline">
-              Retry
-            </button>
+            <button onClick={() => fetchDashboard()} className="text-[11px] font-bold text-rose-500 underline">Retry</button>
           </div>
         )}
 
@@ -429,12 +371,12 @@ export default function TeacherProfilePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-black uppercase tracking-wider transition-all ${
+              className={`px-4 py-1.5 rounded-full text-[12px] font-black uppercase tracking-wider transition-all ${
                 activeTab === tab ? "text-white shadow-sm" : "text-gray-400 hover:text-gray-600"
               }`}
               style={activeTab === tab ? { backgroundColor: primaryColor } : {}}
             >
-              {tab === "profile" ? "Profile" : tab === "assignments" ? "Assignments" : "Security"}
+              {tab === "profile" ? "Profile" : "Assignments"}
             </button>
           ))}
         </div>
@@ -443,12 +385,24 @@ export default function TeacherProfilePage() {
         {activeTab === "profile" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-            {/* ── Left: editable text fields ── */}
-            <div className="md:col-span-2 bg-white rounded shadow-sm border border-gray-100 p-2">
-              <h2 className="text-[14px] font-black text-gray-800 mb-2 flex items-center gap-2">
-                <User size={14} style={{ color: primaryColor }} /> Personal Information
-              </h2>
-              <div className="space-y-2">
+            {/* ── Left: editable fields ── */}
+            <div className="md:col-span-2 bg-white rounded shadow-sm border border-gray-100 p-3">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[14px] font-black text-gray-800 flex items-center gap-2">
+                  <User size={14} style={{ color: primaryColor }} /> Personal Information
+                </h2>
+                {/* <button
+                  onClick={() => setEditMode(e => !e)}
+                  className="text-[11px] font-black px-3 py-1.5 rounded-full border transition-colors"
+                  style={editMode
+                    ? { backgroundColor: primaryColor + "15", color: primaryColor, borderColor: primaryColor + "30" }
+                    : { backgroundColor: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }
+                  }
+                >
+                  {editMode ? "Cancel Edit" : "Edit"}
+                </button> */}
+              </div>
+              <div className="space-y-3">
                 {([
                   { label: "Full Name", key: "name",    type: "text",  icon: User },
                   { label: "Email",     key: "email",   type: "email", icon: Mail },
@@ -456,7 +410,7 @@ export default function TeacherProfilePage() {
                   { label: "Address",   key: "address", type: "text",  icon: Mail },
                 ] as const).map(({ label, key, type, icon: Icon }) => (
                   <div key={key}>
-                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-400  flex items-center gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-1">
                       <Icon size={10} /> {label}
                     </label>
                     {loading ? (
@@ -472,19 +426,38 @@ export default function TeacherProfilePage() {
                         onBlur={e => (e.target.style.borderColor = primaryColor + "40")}
                       />
                     ) : (
-                      <div className="px-4 text-[13px] font-medium text-gray-700 min-h-[42px] flex items-center">
+                      <div className="px-4 py-2.5 bg-gray-50 rounded-full text-[13px] font-medium text-gray-700 min-h-[42px] flex items-center">
                         {form[key] || <span className="text-gray-300">Not set</span>}
                       </div>
                     )}
                   </div>
                 ))}
               </div>
+
+              {editMode && (
+                <div className="flex gap-2 mt-5">
+                  <button
+                    onClick={() => setEditMode(false)}
+                    className="flex-1 py-2.5 rounded-full border border-gray-200 text-[12px] font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-white text-[12px] font-black transition-all hover:opacity-90 disabled:opacity-60"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                    {saving ? "Saving…" : "Save Changes"}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* ── Right column ── */}
-            <div className="space-y-4">
+            <div className="space-y-3">
 
-              {/* ★ Photo Upload Card — always visible, independent of editMode */}
+              {/* Photo upload */}
               {teacherInfo && (
                 <PhotoUploadCard
                   primaryColor={primaryColor}
@@ -494,30 +467,20 @@ export default function TeacherProfilePage() {
                   onToast={(msg, type) => setToast({ msg, type })}
                 />
               )}
-              {loading && <Sk h={200} r={24} />}
+              {loading && <Sk h={180} r={24} />}
 
               {/* Account info */}
-              <div className="bg-white rounded shadow-sm border border-gray-100 p-2">
-                <h2 className="text-[14px] font-black text-gray-800 mb-4 flex items-center gap-2">
-                  <Shield size={14} style={{ color: primaryColor }} /> Account Info
+              <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
+                <h2 className="text-[13px] font-black text-gray-800 mb-3 flex items-center gap-2">
+                  <Shield size={13} style={{ color: primaryColor }} /> Account Info
                 </h2>
                 <div className="space-y-1">
                   {loading ? (
-                    [0,1,2,3].map(i => <Sk key={i} h={44} r={999} />)
+                    [0,1].map(i => <Sk key={i} h={44} r={999} />)
                   ) : (
                     [
-                      { label: "Teacher Code", value: teacherInfo?.code || "—",    icon: Hash },
-                      { label: "Email",         value: teacherInfo?.email || "—",   icon: Mail },
-                      // { label: "Gender",        value: teacherInfo?.gender || "—",  icon: User },
-                      // {
-                      //   label: "Joined",
-                      //   value: teacherInfo?.created_at
-                      //     ? new Date(teacherInfo.created_at).toLocaleDateString("en-US", {
-                      //         year: "numeric", month: "short", day: "numeric",
-                      //       })
-                      //     : "—",
-                      //   icon: Calendar,
-                      // },
+                      { label: "Teacher Code", value: teacherInfo?.code  || "—", icon: Hash },
+                      { label: "Email",         value: teacherInfo?.email || "—", icon: Mail },
                     ].map(({ label, value, icon: Icon }) => (
                       <div key={label} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                         <div
@@ -538,7 +501,7 @@ export default function TeacherProfilePage() {
 
               {/* Recent homeworks */}
               {homeworks.length > 0 && (
-                <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
+                <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
                   <h3 className="text-[13px] font-black text-gray-800 mb-3 flex items-center gap-2">
                     <BookOpen size={12} style={{ color: primaryColor }} /> Recent Homeworks
                   </h3>
@@ -547,8 +510,7 @@ export default function TeacherProfilePage() {
                       const s = HW_STATUS[hw.status ?? "pending"] ?? HW_STATUS.pending;
                       return (
                         <div key={hw.id} className="flex items-center gap-2.5 p-2 rounded hover:bg-gray-50 transition-colors">
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: primaryColor + "12" }}>
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: primaryColor + "12" }}>
                             <BookOpen size={12} style={{ color: primaryColor }} />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -557,10 +519,7 @@ export default function TeacherProfilePage() {
                               {hw.class && `Class ${hw.class}`}{hw.section && ` · ${hw.section}`}
                             </p>
                           </div>
-                          <span
-                            className="text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 capitalize"
-                            style={{ backgroundColor: s.bg, color: s.color }}
-                          >
+                          <span className="text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 capitalize" style={{ backgroundColor: s.bg, color: s.color }}>
                             {hw.status ?? "pending"}
                           </span>
                         </div>
@@ -572,7 +531,7 @@ export default function TeacherProfilePage() {
 
               {/* Recent notes */}
               {notes.length > 0 && (
-                <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
+                <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
                   <h3 className="text-[13px] font-black text-gray-800 mb-3 flex items-center gap-2">
                     <FileText size={12} style={{ color: primaryColor }} /> Recent Notes
                   </h3>
@@ -631,9 +590,7 @@ export default function TeacherProfilePage() {
                   <thead>
                     <tr className="border-b border-gray-100">
                       {["#", "Class", "Section", "Subject"].map(h => (
-                        <th key={h} className="text-left py-3 px-4 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                          {h}
-                        </th>
+                        <th key={h} className="text-left py-3 px-4 text-[10px] font-black uppercase tracking-wider text-gray-400">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -649,7 +606,11 @@ export default function TeacherProfilePage() {
                         <td className="py-3 px-4">
                           <span className="flex items-center gap-1.5 font-bold text-gray-600">
                             <Layers size={11} className="text-gray-400" />
-                            {a.section.toUpperCase()}
+                            {/* ✅ FIX: handle null section gracefully */}
+                            {a.section
+                              ? a.section.toUpperCase()
+                              : <span className="text-gray-300 font-medium">—</span>
+                            }
                           </span>
                         </td>
                         <td className="py-3 px-4">
@@ -667,12 +628,17 @@ export default function TeacherProfilePage() {
               </div>
             )}
 
+            {/* Summary chips */}
             {assignments.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-gray-50">
+              <div className="flex flex-wrap gap-3 mt-5 pt-4 border-t border-gray-50">
                 {[
                   { label: "Unique Classes",  items: uniqueClasses,  color: primaryColor },
                   { label: "Unique Subjects", items: uniqueSubjects, color: "#f97316" },
-                  { label: "Unique Sections", items: uniqueSections, color: "#8b5cf6" },
+                  // ✅ FIX: only show Sections chip if there are actual non-null sections
+                  ...(uniqueSections.length > 0
+                    ? [{ label: "Unique Sections", items: uniqueSections, color: "#8b5cf6" }]
+                    : []
+                  ),
                 ].map(({ label, items, color }) => (
                   <div
                     key={label} className="flex-1 min-w-[160px] rounded p-3 border"
@@ -682,7 +648,8 @@ export default function TeacherProfilePage() {
                     <div className="flex flex-wrap gap-1">
                       {items.map(item => (
                         <span
-                          key={item} className="text-[10px] font-black px-2.5 py-0.5 rounded-full"
+                          key={item}
+                          className="text-[10px] font-black px-2.5 py-0.5 rounded-full"
                           style={{ backgroundColor: color + "15", color }}
                         >
                           {item}
@@ -695,8 +662,6 @@ export default function TeacherProfilePage() {
             )}
           </div>
         )}
-
-        
 
         <p className="text-center text-[11px] text-gray-400 pb-2">
           SchoolMS · Academic Management System · © {new Date().getFullYear()}

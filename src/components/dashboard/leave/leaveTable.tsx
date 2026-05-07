@@ -2,19 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Pencil,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Printer,
-  Inbox,
-  SearchX,
-  Calendar,
-  User,
-  ChevronDown,
-  Filter,
-  X,
+  Pencil, Trash2, ChevronLeft, ChevronRight, Download, Printer,
+  Inbox, SearchX, Calendar, User, ChevronDown, Filter, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -25,16 +14,18 @@ import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { LeaveServices } from "@/services/leaveServices";
 import { ThemedButton } from "@/components/ui/themedButton";
 import useAuth from "@/lib/hooks/useAuth";
+import { useTheme } from "@/lib/context/ThemeContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Leave {
   id: number;
   user?: { id: number; name: string };
-  student_enrollment?: number;
+  student_enrollment?: number | null;
   teacher?: number | null;
   staff?: number | null;
   student_name?: string;
   teacher_name?: string;
+  staff_name?: string;
   leave_type: string;
   start_date: string;
   end_date: string;
@@ -58,7 +49,8 @@ interface LeaveTableProps {
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
 type RoleFilter   = "all" | "student" | "teacher" | "staff";
-type ViewFilter   = "all" | "self"; // Teacher only: self = own leaves
+// ✅ NEW: view filter lets teacher/staff toggle whose leaves they see
+type ViewFilter   = "all" | "mine" | "student";
 
 const PAGE_SIZE = 20;
 
@@ -69,9 +61,10 @@ interface DropdownProps {
   options: { value: string; label: string; dot?: string }[];
   onChange: (val: string) => void;
   icon?: React.ReactNode;
+   primaryColor: string; 
 }
 
-const FilterDropdown = ({ label, value, options, onChange, icon }: DropdownProps) => {
+const FilterDropdown = ({ label, value, options, onChange, icon, primaryColor }: DropdownProps) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -87,33 +80,60 @@ const FilterDropdown = ({ label, value, options, onChange, icon }: DropdownProps
   const isActive = value !== "all";
 
   return (
-    <div ref={ref} className="relative">
+      <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((p) => !p)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded border transition-all select-none
-          ${isActive
-            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-            : "bg-white text-[#526484] border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-          }`}
+        // ✅ active state uses primaryColor via inline style instead of hardcoded blue
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded border transition-all select-none ${
+          isActive
+            ? "text-white shadow-sm"
+            : "bg-white text-[#526484] border-gray-200"
+        }`}
+        style={
+          isActive
+            ? { backgroundColor: primaryColor, borderColor: primaryColor }
+            : undefined
+        }
+        onMouseEnter={(e) => {
+          if (!isActive) {
+            (e.currentTarget as HTMLElement).style.borderColor = primaryColor + "80";
+            (e.currentTarget as HTMLElement).style.backgroundColor = primaryColor + "10";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) {
+            (e.currentTarget as HTMLElement).style.borderColor = "";
+            (e.currentTarget as HTMLElement).style.backgroundColor = "";
+          }
+        }}
       >
         {icon && <span className="opacity-80">{icon}</span>}
         <span>{isActive ? selected?.label : label}</span>
         <ChevronDown size={11} className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
-
+ 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-100 rounded-lg shadow-xl min-w-[145px] overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-100 rounded-lg shadow-xl min-w-[155px] overflow-hidden">
           {options.map((opt) => (
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-[11px] font-semibold flex items-center gap-2 transition-colors
-                ${value === opt.value
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-[#526484] hover:bg-gray-50"
-                }`}
+              // ✅ selected item highlighted with primaryColor
+              className={`w-full text-left px-3 py-2 text-[11px] font-semibold flex items-center gap-2 transition-colors ${
+                value === opt.value ? "font-bold" : "text-[#526484] hover:bg-gray-50"
+              }`}
+              style={
+                value === opt.value
+                  ? { backgroundColor: primaryColor + "15", color: primaryColor }
+                  : undefined
+              }
             >
-              {opt.dot && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${opt.dot}`} />}
+              {opt.dot && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: opt.dot }}  // ✅ dot color passed as hex
+                />
+              )}
               {opt.label}
             </button>
           ))}
@@ -125,63 +145,105 @@ const FilterDropdown = ({ label, value, options, onChange, icon }: DropdownProps
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProps) => {
-  const [list, setList]               = useState<Leave[]>([]);
-  const [filteredData, setFilteredData] = useState<Leave[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const { primaryColor } = useTheme(); 
+  const [list,          setList]          = useState<Leave[]>([]);
+  const [filteredData,  setFilteredData]  = useState<Leave[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [currentPage,   setCurrentPage]   = useState(1);
+  const [isModalOpen,   setIsModalOpen]   = useState(false);
+  const [selectedIds,   setSelectedIds]   = useState<number[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteId, setDeleteId]       = useState<number | null>(null);
+  const [deleteId,      setDeleteId]      = useState<number | null>(null);
 
-  // Filter state
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [roleFilter,   setRoleFilter]   = useState<RoleFilter>("all");
-  const [viewFilter,   setViewFilter]   = useState<ViewFilter>("all");
+  const [viewFilter,   setViewFilter]   = useState<ViewFilter>("all"); // ✅ NEW
 
   const { loggedInUser } = useAuth();
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
+  // ─── Role flags ───────────────────────────────────────────────────────────
+  const role      = (loggedInUser?.role || "").toLowerCase();
+  const isAdmin   = role === "admin" || role === "superadmin";
+  const isTeacher = role === "teacher";
+  const isStaff   = role === "staff";
+  const isStudent = role === "student";
+
+  // ─── Ownership matchers ───────────────────────────────────────────────────
+  const isMyTeacherLeave = (item: Leave): boolean => {
+    if (!isTeacher) return false;
+    const myProfileId = loggedInUser?.teacher?.id;
+    if (myProfileId != null && item.teacher === myProfileId) return true;
+    const myName  = (loggedInUser?.teacher?.name || loggedInUser?.name || "").toLowerCase().trim();
+    const rowName = (item.teacher_name || "").toLowerCase().trim();
+    return myName !== "" && rowName !== "" && rowName === myName;
+  };
+
+  const isMyStaffLeave = (item: Leave): boolean => {
+    if (!isStaff) return false;
+    const myProfileId = loggedInUser?.staff?.id;
+    if (myProfileId != null && item.staff === myProfileId) return true;
+    const myName  = (loggedInUser?.staff?.name || loggedInUser?.name || "").toLowerCase().trim();
+    const rowName = (item.user?.name || "").toLowerCase().trim();
+    return myName !== "" && rowName !== "" && rowName === myName;
+  };
+
+  const isMyStudentLeave = (item: Leave): boolean => {
+    if (!isStudent) return false;
+    const myProfileId = loggedInUser?.student?.id ?? loggedInUser?.id;
+    if (myProfileId != null && item.student_enrollment === myProfileId) return true;
+    const myName  = (loggedInUser?.student?.name || loggedInUser?.name || "").toLowerCase().trim();
+    const rowName = (item.student_name || "").toLowerCase().trim();
+    return myName !== "" && rowName !== "" && rowName === myName;
+  };
+
+  // Is this row a student leave? (used for teacher/staff view filter)
+  const isStudentLeave = (item: Leave): boolean =>
+    !!item.student_name || item.student_enrollment != null;
+
+  // ─── Display helpers ──────────────────────────────────────────────────────
   const getApplicantName = (item: Leave): string =>
-    item.student_name || item.teacher_name || item.user?.name || "Unknown";
+    item.student_name || item.teacher_name || item.user?.name || item.staff_name || "Unknown";
 
   const getApplicantRole = (item: Leave): string => {
     if (item.student_name  || item.student_enrollment != null) return "Student";
     if (item.teacher_name  || item.teacher != null)            return "Teacher";
-    if (item.staff != null)                                    return "Staff";
+    if (item.staff_name    || item.staff != null)              return "Staff";
     return "N/A";
   };
 
-  // Is this leave row the logged-in teacher's own leave?
-  const isOwnLeave = (item: Leave): boolean =>
-    item.teacher === loggedInUser?._id || item.user?.id === loggedInUser?._id;
-
-  const isTeacher = loggedInUser?.role === "teacher";
-  const isAdmin   = loggedInUser?.role === "admin" || loggedInUser?.role === "superadmin";
-
-  // ─── Fetch ───────────────────────────────────────────────────────────────────
+  // ─── Fetch + initial role-based visibility ────────────────────────────────
   const fetchLeaves = async () => {
     try {
       setLoading(true);
-      const res     = await LeaveServices.getAllLeaves();
+      const res      = await LeaveServices.getAllLeaves();
       const allData: Leave[] = Array.isArray(res) ? res : res?.results || res?.data || [];
 
-      let byRole = [...allData];
+      let visible: Leave[];
 
       if (isAdmin) {
-        byRole = allData;
+        visible = allData;
       } else if (isTeacher) {
-        // Teacher sees: their own leaves + all student leaves
-        byRole = allData.filter((i) => isOwnLeave(i) || !!i.student_name);
-      } else if (loggedInUser?.role === "student") {
-        byRole = allData.filter(
-          (i) => i.student_enrollment === loggedInUser?._id || i.user?.id === loggedInUser?._id
+        // Teacher base pool: own leaves + all student leaves
+        visible = allData.filter(
+          (item) => isMyTeacherLeave(item) || isStudentLeave(item)
         );
+      } else if (isStaff) {
+        // Staff base pool: own leaves + all student leaves
+        visible = allData.filter(
+          (item) => isMyStaffLeave(item) || isStudentLeave(item)
+        );
+      } else if (isStudent) {
+        // Student: only own leaves
+        visible = allData.filter((item) => isMyStudentLeave(item));
       } else {
-        byRole = allData; // fallback
+        visible = [];
       }
 
-      setList([...byRole].reverse());
+      setList(
+        [...visible].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+      );
     } catch {
       toast.error("Failed to load leave requests");
     } finally {
@@ -191,12 +253,12 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
 
   useEffect(() => { fetchLeaves(); }, [refreshTrigger]);
 
-  // ─── Combined Filter (search + dropdowns) ─────────────────────────────────
+  // ─── Combined filter (search + dropdowns + viewFilter) ────────────────────
   useEffect(() => {
     const q = searchQuery.toLowerCase().trim();
 
     const result = list.filter((item) => {
-      // Search
+      // ── Search ──
       const name = getApplicantName(item).toLowerCase();
       const matchSearch =
         !q ||
@@ -205,15 +267,25 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
         item.reason?.toLowerCase().includes(q) ||
         item.status?.toLowerCase().includes(q);
 
-      // Status dropdown
+      // ── Status ──
       const matchStatus = statusFilter === "all" || item.status === statusFilter;
 
-      // Role dropdown (admin only)
-      const itemRole    = getApplicantRole(item).toLowerCase();
-      const matchRole   = roleFilter === "all" || itemRole === roleFilter;
+      // ── Role (admin only) ──
+      const itemRole  = getApplicantRole(item).toLowerCase();
+      const matchRole = roleFilter === "all" || itemRole === roleFilter;
 
-      // View dropdown (teacher only: "self" = own leaves)
-      const matchView   = viewFilter === "all" || (viewFilter === "self" && isOwnLeave(item));
+      // ✅ View filter (teacher / staff):
+      //   "all"     → show everything in their base pool (own + students)
+      //   "mine"    → show only their own leave rows
+      //   "student" → show only student leave rows
+      let matchView = true;
+      if ((isTeacher || isStaff) && viewFilter !== "all") {
+        if (viewFilter === "mine") {
+          matchView = isTeacher ? isMyTeacherLeave(item) : isMyStaffLeave(item);
+        } else if (viewFilter === "student") {
+          matchView = isStudentLeave(item);
+        }
+      }
 
       return matchSearch && matchStatus && matchRole && matchView;
     });
@@ -241,14 +313,13 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
     setViewFilter("all");
   };
 
-  // ─── PDF ─────────────────────────────────────────────────────────────────────
+  // ─── PDF ──────────────────────────────────────────────────────────────────
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text("Leave Request Report", 14, 15);
     doc.setFontSize(10);
     doc.text(`Page: ${currentPage} | Date: ${dayjs().format("DD MMM, YYYY")}`, 14, 22);
-
     autoTable(doc, {
       head: [["S.N.", "Name", "Role", "Type", "Duration", "Days", "Status"]],
       body: paginatedItems.map((item, i) => [
@@ -268,7 +339,7 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
     toast.success("PDF Downloaded successfully");
   };
 
-  // ─── Print ────────────────────────────────────────────────────────────────────
+  // ─── Print ────────────────────────────────────────────────────────────────
   const handlePrint = () => {
     const rows = paginatedItems.map((item, i) => `
       <tr>
@@ -280,7 +351,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
         <td>${dayjs(item.end_date).diff(dayjs(item.start_date), "day") + 1} Day(s)</td>
         <td>${item.status}</td>
       </tr>`).join("");
-
     const w = window.open("", "_blank");
     if (w) {
       w.document.write(`<html><head><title>Leave List</title>
@@ -297,16 +367,15 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
     }
   };
 
-  // ─── Checkboxes ───────────────────────────────────────────────────────────────
+  // ─── Checkboxes ───────────────────────────────────────────────────────────
   const handleSelectAll = () => {
     if (selectedIds.length === paginatedItems.length) setSelectedIds([]);
     else setSelectedIds(paginatedItems.map((i) => i.id));
   };
-
   const handleSelectOne = (id: number) =>
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
 
-  // ─── Delete ───────────────────────────────────────────────────────────────────
+  // ─── Delete ───────────────────────────────────────────────────────────────
   const handleConfirmDelete = async () => {
     const ids = selectedIds.length > 0 ? selectedIds : deleteId ? [deleteId] : [];
     try {
@@ -324,7 +393,7 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
     }
   };
 
-  // ─── Style Helpers ────────────────────────────────────────────────────────────
+  // ─── Style helpers ────────────────────────────────────────────────────────
   const getStatusStyle = (status: string) => {
     switch (status.toLowerCase()) {
       case "approved": return "bg-green-100 text-green-700 border-green-200";
@@ -332,7 +401,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
       default:         return "bg-amber-100 text-amber-700 border-amber-200";
     }
   };
-
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
       case "Teacher": return "bg-blue-50 text-blue-600 border-blue-100";
@@ -342,35 +410,40 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-3 font-mukta">
 
-      {/* ══ FILTER BAR ══════════════════════════════════════════════════════════ */}
-      <div className="flex flex-wrap items-center gap-2 px-1">
-        <span className="flex items-center gap-1 text-[11px] font-bold text-[#8094ae] uppercase tracking-wider">
+    <div className="flex flex-wrap items-center gap-2 px-1">
+        {/* ✅ Filter label uses primaryColor */}
+        <span
+          className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider"
+          style={{ color: primaryColor }}
+        >
           <Filter size={11} /> Filter:
         </span>
-
-        {/* Status — visible to ALL roles */}
+ 
+        {/* Status */}
         <FilterDropdown
           label="All Status"
           value={statusFilter}
           onChange={(v) => setStatusFilter(v as StatusFilter)}
+          primaryColor={primaryColor}
           options={[
             { value: "all",      label: "All Status" },
-            { value: "pending",  label: "Pending",   dot: "bg-amber-400" },
-            { value: "approved", label: "Approved",  dot: "bg-green-500" },
-            { value: "rejected", label: "Rejected",  dot: "bg-red-500"   },
+            { value: "pending",  label: "Pending",   dot: "#f59e0b" },
+            { value: "approved", label: "Approved",  dot: "#22c55e" },
+            { value: "rejected", label: "Rejected",  dot: "#ef4444" },
           ]}
         />
-
+ 
         {/* Role — admin only */}
         {isAdmin && (
           <FilterDropdown
             label="All Roles"
             value={roleFilter}
             onChange={(v) => setRoleFilter(v as RoleFilter)}
+            primaryColor={primaryColor}
             options={[
               { value: "all",     label: "All Roles" },
               { value: "student", label: "Student"   },
@@ -379,22 +452,24 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
             ]}
           />
         )}
-
-        {/* View — teacher only: toggle between own leaves vs all */}
-        {/* {isTeacher && (
+ 
+        {/* View — teacher & staff only */}
+        {(isTeacher || isStaff) && (
           <FilterDropdown
             label="All Leaves"
             value={viewFilter}
             onChange={(v) => setViewFilter(v as ViewFilter)}
+            primaryColor={primaryColor}
             icon={<User size={11} />}
             options={[
-              { value: "all",  label: "All Leaves"     },
-              { value: "self", label: "My Leaves Only"  },
+              { value: "all",     label: "All Leaves",     dot: "#94a3b8" },
+              { value: "mine",    label: "My Application", dot: primaryColor },
+              { value: "student", label: "Student Leaves", dot: "#8b5cf6"   },
             ]}
           />
-        )} */}
-
-        {/* Clear button */}
+        )}
+ 
+        {/* ✅ Clear button uses primaryColor-adjacent red — unchanged */}
         {activeFilterCount > 0 && (
           <button
             onClick={clearAllFilters}
@@ -403,20 +478,42 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
             <X size={11} /> Clear ({activeFilterCount})
           </button>
         )}
-
+ 
         {activeFilterCount > 0 && (
           <span className="text-[10px] text-[#8094ae] italic">
             {filteredData.length} result{filteredData.length !== 1 ? "s" : ""}
           </span>
         )}
+ 
+        {/* ✅ Info badge uses primaryColor background tint */}
+        <span
+          className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded-full border"
+          style={{
+            color:           primaryColor,
+            backgroundColor: primaryColor + "12",
+            borderColor:     primaryColor + "30",
+          }}
+        >
+          {isAdmin   && "Viewing: All leaves"}
+          {isTeacher && (
+            viewFilter === "mine"    ? "Viewing: Your leaves only" :
+            viewFilter === "student" ? "Viewing: Student leaves only" :
+                                       "Viewing: Your leaves + student leaves"
+          )}
+          {isStaff   && (
+            viewFilter === "mine"    ? "Viewing: Your leaves only" :
+            viewFilter === "student" ? "Viewing: Student leaves only" :
+                                       "Viewing: Your leaves + student leaves"
+          )}
+          {isStudent && "Viewing: Your leaves only"}
+        </span>
       </div>
 
-      {/* ══ TABLE ═══════════════════════════════════════════════════════════════ */}
+      {/* ══ TABLE ═══════════════════════════════════════════════════════════ */}
       <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto max-h-[450px] scrollbar-hide relative">
           <table className="w-full text-left border-separate border-spacing-0">
 
-            {/* HEAD */}
             <thead className="sticky top-0 z-30 shadow-sm">
               <tr className="bg-[#f5f6fa]">
                 <th className="px-4 py-1 w-10 border-b">
@@ -439,7 +536,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
               </tr>
             </thead>
 
-            {/* BODY */}
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <TableLoadingSkeleton rows={5} cols={9} />
@@ -470,17 +566,19 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                   const applicantName = getApplicantName(item);
                   const applicantRole = getApplicantRole(item);
                   const days          = dayjs(item.end_date).diff(dayjs(item.start_date), "day") + 1;
-                  const isSelf        = isOwnLeave(item);
+
+                  const isMyOwnRow =
+                    (isTeacher && isMyTeacherLeave(item)) ||
+                    (isStaff   && isMyStaffLeave(item));
 
                   return (
                     <tr
                       key={item.id}
                       className={`hover:bg-gray-50 transition-colors
-                        ${isSelected ? "bg-blue-50/40" : ""}
-                        ${isTeacher && isSelf ? "border-l-[3px] border-l-blue-400" : "border-l-[3px] border-l-transparent"}
+                        ${isSelected  ? "bg-blue-50/40" : ""}
+                        ${isMyOwnRow  ? "border-l-[3px] border-l-blue-400" : "border-l-[3px] border-l-transparent"}
                       `}
                     >
-                      {/* Checkbox */}
                       <td className="px-4 py-2">
                         <input
                           type="checkbox"
@@ -490,19 +588,16 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                         />
                       </td>
 
-                      {/* S.N. */}
                       <td className="px-4 py-1 text-[10px] text-[#526484]">
                         {(currentPage - 1) * PAGE_SIZE + index + 1}
                       </td>
 
-                      {/* Applicant */}
                       <td className="px-4 py-1">
                         <div className="flex flex-col">
                           <span className="text-[11px] text-[#364a63] font-bold uppercase flex items-center gap-1 flex-wrap">
                             <User size={10} className="text-blue-500 flex-shrink-0" />
                             {applicantName}
-                            {/* "YOU" badge for teacher's own row */}
-                            {isTeacher && isSelf && (
+                            {isMyOwnRow && (
                               <span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 text-[8px] font-bold rounded-full normal-case">
                                 YOU
                               </span>
@@ -514,15 +609,13 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                         </div>
                       </td>
 
-                      {/* Role Badge */}
                       <td className="px-4 py-1">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getRoleBadgeStyle(applicantRole)}`}>
                           {applicantRole}
                         </span>
                       </td>
 
-                      {/* Type & Reason */}
-                      <td className="px-4 py-1  ">
+                      <td className="px-4 py-1">
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-1 flex-wrap">
                             <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase">
@@ -540,7 +633,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                         </div>
                       </td>
 
-                      {/* Duration */}
                       <td className="px-4 py-1">
                         <div className="flex flex-col text-[10px] text-slate-600 font-medium">
                           <div className="flex items-center gap-1 whitespace-nowrap">
@@ -554,14 +646,12 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                         </div>
                       </td>
 
-                      {/* Status */}
-                      <td className="px-4 py-1 ">
+                      <td className="px-4 py-1">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getStatusStyle(item.status)}`}>
                           {item.status}
                         </span>
                       </td>
 
-                      {/* Attachment */}
                       <td className="px-4 py-1">
                         {item.attachment ? (
                           <a
@@ -577,7 +667,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                         )}
                       </td>
 
-                      {/* Action */}
                       <td className="px-4 py-1 text-right">
                         <div className="flex justify-end gap-1">
                           <button
@@ -604,7 +693,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
           </table>
         </div>
 
-        {/* ── Footer ── */}
         {!loading && filteredData.length > 0 && (
           <div className="flex items-center justify-between px-6 py-1 border-t bg-[#f5f6fa]">
             <div className="flex items-center gap-2">
@@ -625,21 +713,12 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                 <Printer size={12} /> Print
               </ThemedButton>
             </div>
-
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-1 disabled:opacity-30"
-              >
+              <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 disabled:opacity-30">
                 <ChevronLeft size={14} />
               </button>
               <span className="text-[11px] font-bold px-2">{currentPage} / {totalPages}</span>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-1 disabled:opacity-30"
-              >
+              <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 disabled:opacity-30">
                 <ChevronRight size={14} />
               </button>
             </div>
@@ -647,9 +726,8 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
         )}
       </div>
 
-      {/* ── Bulk Delete Bar ── */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 px-1">
+        <div className="flex items-center justify-between px-1">
           <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
             {selectedIds.length} Request{selectedIds.length > 1 ? "s" : ""} Selected
           </span>
@@ -662,7 +740,6 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
         </div>
       )}
 
-      {/* ── Confirm Modal ── */}
       <ConfirmModal
         isOpen={isModalOpen}
         title={selectedIds.length > 0 ? "Delete Multiple Leave Requests?" : "Remove Leave Record?"}

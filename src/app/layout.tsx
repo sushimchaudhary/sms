@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/lib/context/ThemeContext";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/lib/context/LanguageContext";
 import { TranslationProvider } from "@/lib/context/TranslationContext";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -71,12 +73,14 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
+ 
 }: {
   children: React.ReactNode;
+  
 }) {
 
 
-
+  const messages = await getMessages();
 
   return (
     <html lang="en">
@@ -98,13 +102,13 @@ export default async function RootLayout({
           }}
         />
 
-       
+         <NextIntlClientProvider messages={messages}>
           <LanguageProvider>
             <TranslationProvider >
             <ThemeProvider>{children}</ThemeProvider>
             </TranslationProvider>
           </LanguageProvider>
-
+        </NextIntlClientProvider>
       
       </body>
     </html>

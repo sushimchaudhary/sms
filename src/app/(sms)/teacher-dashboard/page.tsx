@@ -8,7 +8,7 @@ import {
   AlertCircle, ChevronRight,
   Clock, CheckCircle2, Clock3,
   BarChart2, Star, Award,
-  Hash,
+  Hash, RefreshCw,
 } from "lucide-react";
 import { TeacherServices } from "@/services/teacherServices";
 import { LeaveServices }   from "@/services/leaveServices";
@@ -25,24 +25,25 @@ import DashboardCalendar from "@/components/ui/dashboardCalendar";
 
 // ─── Backend response types ───────────────────────────────────────────────────
 
-/** Shape returned by GET /api/teachers/my_dashboard/ */
 interface TeacherDashboardResponse {
   teacher: {
     id: number;
     name: string;
     email: string;
-    code: string;      
-    photo?: string;   
+    code: string;
+    photo?: string;
   };
   assignments: Assignment[];
   note?: any[];
   homework?: Homework[];
+  recent_homeworks?: Homework[];  // ✅ FIX: backend key is recent_homeworks
+  recent_notes?: any[];
 }
 
 interface Assignment {
-  class: string;    
-  section: string;  
-  subject: string;  
+  class: string;
+  section: string | null;   // ✅ FIX: section can be null
+  subject: string;
 }
 
 interface Homework {
@@ -67,6 +68,7 @@ function getItems(d: any): any[] {
   if (d?.data && Array.isArray(d.data)) return d.data;
   return [];
 }
+
 function initials(name: string) {
   return (name || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 }
@@ -82,8 +84,6 @@ function Sk({ w = "100%", h = 14, r = 8 }: { w?: string | number; h?: number; r?
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-
-// AFTER
 function Ava({ name, color, size = 32, photo }: { name: string; color: string; size?: number; photo?: string }) {
   const [imgError, setImgError] = useState(false);
 
@@ -94,7 +94,7 @@ function Ava({ name, color, size = 32, photo }: { name: string; color: string; s
         alt={name}
         className="rounded-full object-cover flex-shrink-0 border-2 border-white/30"
         style={{ width: size, height: size }}
-        onError={() => setImgError(true)}   // ← triggers re-render with initials fallback
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -133,21 +133,57 @@ function StatCard({ label, value, icon: Icon, color, bg, loading }: {
   color: string; bg: string; loading: boolean;
 }) {
   return (
-    <div className="bg-white rounded border border-gray-100 p-3 flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 relative overflow-hidden">
-      <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
-        <Icon size={18} style={{ color }} />
+    <div className="bg-white rounded border border-gray-100 p-4 flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 relative overflow-hidden">
+      <div className="w-11 h-11 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
+        <Icon size={19} style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
         {loading ? (
           <><Sk w={48} h={22} /><div className="mt-1.5"><Sk w={72} h={9} /></div></>
         ) : (
           <>
-            <p className="text-[22px] font-black text-gray-800 tabular-nums leading-none">{value}</p>
+            <p className="text-[24px] font-black text-gray-800 tabular-nums leading-none">{value}</p>
             <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">{label}</p>
           </>
         )}
       </div>
       <div className="absolute -right-5 -bottom-5 w-20 h-20 rounded-full opacity-[0.07]" style={{ backgroundColor: color }} />
+    </div>
+  );
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 text-gray-300 gap-2">
+      <Icon size={28} />
+      <p className="text-[11px] text-gray-400 font-medium">{message}</p>
+    </div>
+  );
+}
+
+// ─── Section Header ───────────────────────────────────────────────────────────
+function SectionHeader({ title, subtitle, badge, icon: Icon, primaryColor }: {
+  title: string; subtitle?: string; badge?: string | number;
+  icon?: any; primaryColor: string;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div>
+        <h3 className="text-[14px] font-black text-gray-800 tracking-tight flex items-center gap-2">
+          {Icon && <Icon size={14} style={{ color: primaryColor }} />}
+          {title}
+        </h3>
+        {subtitle && <p className="text-[10px] text-gray-400 mt-0.5">{subtitle}</p>}
+      </div>
+      {badge !== undefined && (
+        <span
+          className="text-[11px] font-black px-3 py-1 rounded-full"
+          style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
+        >
+          {badge}
+        </span>
+      )}
     </div>
   );
 }
@@ -167,7 +203,7 @@ export default function TeacherDashboardPage() {
   const [assignments,  setAssignments]  = useState<Assignment[]>([]);
   const [homeworks,    setHomeworks]    = useState<Homework[]>([]);
 
-  // ── Secondary data (other endpoints) ───────────────────────────────────────
+  // ── Secondary data ─────────────────────────────────────────────────────────
   const [leaves,        setLeaves]        = useState<any[]>([]);
   const [attendance,    setAttendance]    = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -177,10 +213,8 @@ export default function TeacherDashboardPage() {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
-      // Primary: single dashboard endpoint
-      // Secondary: leaves, attendance, notifications (optional — gracefully fails)
       const [dashR, lvR, attR, ntR] = await Promise.allSettled([
-        TeacherServices.getTeacherDashboard(),   // → TeacherDashboardResponse
+        TeacherServices.getTeacherDashboard(),
         LeaveServices.getAllLeaves?.(),
         AttendanceServices.getStudentAttendance?.(),
         NotificationServices.getAllNotifications?.(),
@@ -189,14 +223,13 @@ export default function TeacherDashboardPage() {
       const v = (r: PromiseSettledResult<any>) =>
         r.status === "fulfilled" ? r.value : null;
 
-      // ── Primary dashboard data ───────────────────────────────────────────
       const dash: TeacherDashboardResponse | null = v(dashR);
-      setTeacherInfo(dash?.teacher   ?? null);
+      setTeacherInfo(dash?.teacher ?? null);
       setAssignments(dash?.assignments ?? []);
-      // backend key may be "homework" (array) or nested — handle both
-      setHomeworks(getItems(dash?.homework));
 
-      // ── Secondary data ───────────────────────────────────────────────────
+      // ✅ FIX: read recent_homeworks first, fallback to homework
+      setHomeworks(getItems(dash?.recent_homeworks ?? dash?.homework));
+
       setLeaves(getItems(v(lvR)).slice(0, 4));
       setAttendance(getItems(v(attR)));
       setNotifications(getItems(v(ntR)).slice(0, 5));
@@ -212,12 +245,19 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // ── Derived counts from assignments ───────────────────────────────────────
-  // assignments: [{ class, section, subject }]
-  // Unique classes, sections, subjects
-  const uniqueClasses  = useMemo(() => [...new Set(assignments.map(a => a.class))],   [assignments]);
-  const uniqueSections = useMemo(() => [...new Set(assignments.map(a => a.section))], [assignments]);
-  const uniqueSubjects = useMemo(() => [...new Set(assignments.map(a => a.subject))], [assignments]);
+  // ── Derived counts — ✅ FIX: filter out null sections ─────────────────────
+  const uniqueClasses  = useMemo(
+    () => [...new Set(assignments.map(a => a.class).filter(Boolean))],
+    [assignments]
+  );
+  const uniqueSections = useMemo(
+    () => [...new Set(assignments.map(a => a.section).filter(Boolean))],  // ✅ filters null
+    [assignments]
+  );
+  const uniqueSubjects = useMemo(
+    () => [...new Set(assignments.map(a => a.subject).filter(Boolean))],
+    [assignments]
+  );
 
   // ── Homework stats ─────────────────────────────────────────────────────────
   const hwStats = useMemo(() => {
@@ -264,7 +304,7 @@ export default function TeacherDashboardPage() {
   const absentTotal   = attendance.length - presentTotal;
   const attendancePct = attendance.length > 0 ? Math.round((presentTotal / attendance.length) * 100) : 0;
 
-  // ── Resolved teacher fields ────────────────────────────────────────────────
+  // ── Teacher fields ─────────────────────────────────────────────────────────
   const teacherName  = teacherInfo?.name  || user?.name  || "Teacher";
   const teacherEmail = teacherInfo?.email || user?.email || "—";
   const teacherCode  = teacherInfo?.code  || "—";
@@ -290,16 +330,16 @@ export default function TeacherDashboardPage() {
           <div className="absolute top-6 -right-2 w-28 h-28 rounded-full bg-white/[0.07] pointer-events-none" />
           <div className="absolute -bottom-10 left-24 w-44 h-44 rounded-full bg-white/[0.05] pointer-events-none" />
 
-          <div className="relative p-4 flex flex-col md:flex-row md:items-center gap-5">
+          <div className="relative p-5 flex flex-col md:flex-row md:items-center gap-5">
             <div className="flex-1 min-w-0">
               <p className="text-white/65 text-[10px] font-black uppercase tracking-[0.18em] mb-0.5">{getGreeting()}</p>
-              <h1 className="text-white text-[22px] font-black tracking-tight leading-tight truncate">
+              <h1 className="text-white text-[24px] font-black tracking-tight leading-tight truncate">
                 {loading ? "Loading..." : teacherName}
               </h1>
               <p className="text-white/55 text-[11px] flex items-center gap-1.5 mt-0.5">
                 {loading ? "—" : teacherEmail}
               </p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-white/20 backdrop-blur-sm">
                   Teacher
                 </span>
@@ -325,21 +365,22 @@ export default function TeacherDashboardPage() {
                   { label: "Sections", value: uniqueSections.length },
                   { label: "Subjects", value: uniqueSubjects.length },
                 ].map(({ label, value }) => (
-                  <div key={label} className="bg-white/15 backdrop-blur-sm border border-white/25 rounded px-4 py-3 text-center shadow-inner">
+                  <div key={label} className="bg-white/15 backdrop-blur-sm border border-white/25 rounded px-5 py-3 text-center shadow-inner min-w-[72px]">
                     <p className="text-white/55 text-[9px] font-black uppercase tracking-[0.2em] mb-1">{label}</p>
-                    <p className="text-white text-2xl font-black tabular-nums leading-none">{value}</p>
+                    <p className="text-white text-[26px] font-black tabular-nums leading-none">{value}</p>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Refresh */}
+            {/* Refresh button */}
             <button
               onClick={() => fetchAll(true)}
               disabled={refreshing}
-              className="absolute top-3 right-3 p-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
+              title="Refresh"
             >
-              <ClipboardList size={13} className={`text-white/70 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw size={13} className={`text-white/70 ${refreshing ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -356,10 +397,10 @@ export default function TeacherDashboardPage() {
         {/* ══ STAT CARDS ═══════════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {([
-            { label: "Classes",    value: uniqueClasses.length,  icon: School,        color: primaryColor, bg: primaryColor + "14" },
-            { label: "Sections",   value: uniqueSections.length, icon: Layers,        color: "#8b5cf6",    bg: "#ede9fe" },
-            { label: "Subjects",   value: uniqueSubjects.length, icon: BookOpen,      color: "#f97316",    bg: "#ffedd5" },
-            { label: "Homeworks",  value: hwStats.total,         icon: ClipboardList, color: "#10b981",    bg: "#d1fae5" },
+            { label: "Classes",   value: uniqueClasses.length,  icon: School,        color: primaryColor, bg: primaryColor + "14" },
+            { label: "Sections",  value: uniqueSections.length, icon: Layers,        color: "#8b5cf6",    bg: "#ede9fe" },
+            { label: "Subjects",  value: uniqueSubjects.length, icon: BookOpen,      color: "#f97316",    bg: "#ffedd5" },
+            { label: "Homeworks", value: hwStats.total,         icon: ClipboardList, color: "#10b981",    bg: "#d1fae5" },
           ] as const).map(s => (
             <StatCard key={s.label} {...s} loading={loading} />
           ))}
@@ -372,19 +413,13 @@ export default function TeacherDashboardPage() {
           <div className="xl:col-span-2 space-y-4">
 
             {/* ── Assignments Table ── */}
-            <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-[15px] font-black text-gray-800 tracking-tight">My Assignments</h3>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Classes, sections and subjects you teach</p>
-                </div>
-                <span
-                  className="text-[11px] font-black px-3 py-1 rounded-full"
-                  style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
-                >
-                  {assignments.length} total
-                </span>
-              </div>
+            <div className="bg-white rounded shadow-sm border border-gray-100 p-5">
+              <SectionHeader
+                title="My Assignments"
+                subtitle="Classes, sections and subjects you teach"
+                badge={`${assignments.length} total`}
+                primaryColor={primaryColor}
+              />
 
               {loading ? (
                 <div className="space-y-3">
@@ -396,7 +431,7 @@ export default function TeacherDashboardPage() {
                   ))}
                 </div>
               ) : assignments.length === 0 ? (
-                <p className="text-center text-[12px] text-gray-400 py-8">No assignments found</p>
+                <EmptyState icon={School} message="No assignments found" />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-[12px]">
@@ -409,15 +444,9 @@ export default function TeacherDashboardPage() {
                     </thead>
                     <tbody>
                       {assignments.map((a, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                        >
+                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                           <td className="py-2.5 px-3">
-                            <span
-                              className="inline-flex items-center gap-1.5 font-bold"
-                              style={{ color: primaryColor }}
-                            >
+                            <span className="inline-flex items-center gap-1.5 font-bold" style={{ color: primaryColor }}>
                               <School size={11} />
                               {a.class}
                             </span>
@@ -425,7 +454,8 @@ export default function TeacherDashboardPage() {
                           <td className="py-2.5 px-3">
                             <span className="inline-flex items-center gap-1.5 font-bold text-gray-600">
                               <Layers size={11} className="text-gray-400" />
-                              {a.section}
+                              {/* ✅ FIX: show "—" when section is null */}
+                              {a.section ?? <span className="text-gray-300">—</span>}
                             </span>
                           </td>
                           <td className="py-2.5 px-3">
@@ -449,20 +479,12 @@ export default function TeacherDashboardPage() {
 
               {/* Homework Analytics */}
               <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-[14px] font-black text-gray-800">Homework Analytics</h3>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Assigned vs submitted · monthly</p>
-                  </div>
-                  {!loading && hwStats.total > 0 && (
-                    <span
-                      className="text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1"
-                      style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
-                    >
-                      <Hash size={9} />{hwStats.total}
-                    </span>
-                  )}
-                </div>
+                <SectionHeader
+                  title="Homework Analytics"
+                  subtitle="Assigned vs submitted · monthly"
+                  badge={!loading && hwStats.total > 0 ? `#${hwStats.total}` : undefined}
+                  primaryColor={primaryColor}
+                />
 
                 {/* KPI row */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
@@ -480,14 +502,10 @@ export default function TeacherDashboardPage() {
                   </div>
                 </div>
 
-                {/* Chart */}
                 {loading ? (
                   <div className="h-[140px] flex items-center justify-center"><Sk w="85%" h={90} r={10} /></div>
                 ) : hwChartData.length === 0 ? (
-                  <div className="h-[140px] flex flex-col items-center justify-center text-gray-300">
-                    <ClipboardList size={28} className="mb-2" />
-                    <p className="text-[11px] text-gray-400">No homework data yet</p>
-                  </div>
+                  <EmptyState icon={ClipboardList} message="No homework data yet" />
                 ) : (
                   <ResponsiveContainer width="100%" height={140}>
                     <AreaChart data={hwChartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
@@ -533,28 +551,17 @@ export default function TeacherDashboardPage() {
 
               {/* Weekly Attendance */}
               <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-[14px] font-black text-gray-800">Weekly Attendance</h3>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Present vs absent by weekday</p>
-                  </div>
-                  {!loading && attendance.length > 0 && (
-                    <span
-                      className="text-[11px] font-black px-2.5 py-1 rounded-full"
-                      style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
-                    >
-                      {attendancePct}%
-                    </span>
-                  )}
-                </div>
+                <SectionHeader
+                  title="Weekly Attendance"
+                  subtitle="Present vs absent by weekday"
+                  badge={!loading && attendance.length > 0 ? `${attendancePct}%` : undefined}
+                  primaryColor={primaryColor}
+                />
 
                 {loading ? (
                   <div className="h-[160px] flex items-center justify-center"><Sk w="85%" h={110} r={10} /></div>
                 ) : attChartData.length === 0 ? (
-                  <div className="h-[160px] flex flex-col items-center justify-center text-gray-300">
-                    <Users size={28} className="mb-2" />
-                    <p className="text-[11px] text-gray-400">No attendance records yet</p>
-                  </div>
+                  <EmptyState icon={Users} message="No attendance records yet" />
                 ) : (
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={attChartData} margin={{ top: 0, right: 0, bottom: 0, left: -30 }} barSize={18} barGap={2}>
@@ -587,11 +594,12 @@ export default function TeacherDashboardPage() {
 
             {/* ── Recent Homeworks List ── */}
             {homeworks.length > 0 && (
-              <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[15px] font-black text-gray-800">Recent Homeworks</h3>
-                  <BookOpen size={16} style={{ color: primaryColor }} />
-                </div>
+              <div className="bg-white rounded shadow-sm border border-gray-100 p-5">
+                <SectionHeader
+                  title="Recent Homeworks"
+                  icon={BookOpen}
+                  primaryColor={primaryColor}
+                />
                 <div className="space-y-2">
                   {homeworks.slice(0, 6).map((hw, i) => {
                     const status = hw.status || (hw.is_submitted ? "submitted" : hw.is_graded ? "graded" : hw.is_overdue ? "overdue" : "pending");
@@ -603,9 +611,9 @@ export default function TeacherDashboardPage() {
                     };
                     const s = MAP[status] ?? MAP.pending;
                     return (
-                      <div key={hw.id ?? i} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-50 hover:bg-gray-50 transition-colors">
+                      <div key={hw.id ?? i} className="flex items-center gap-3 p-2.5 rounded border border-gray-50 hover:bg-gray-50 transition-colors">
                         <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                          className="w-9 h-9 rounded flex items-center justify-center shrink-0"
                           style={{ backgroundColor: primaryColor + "15" }}
                         >
                           <BookOpen size={14} style={{ color: primaryColor }} />
@@ -630,46 +638,14 @@ export default function TeacherDashboardPage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* ══ RIGHT SIDEBAR ════════════════════════════════════════════════ */}
-          <div className="space-y-4">
-
-            {/* Teacher Profile Card */}
-            <div className="rounded overflow-hidden shadow-md border border-gray-100">
-              <div
-                className="relative p-4 flex items-center gap-3 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}a0)` }}
-              >
-                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
-              
-                <Ava name={teacherName} color="rgba(255,255,255,0.25)" size={44} photo={teacherInfo?.photo} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 mb-0.5">Teacher Profile</p>
-                  <p className="text-[14px] font-black text-white truncate">{loading ? "—" : teacherName}</p>
-                  <p className="text-[10px] text-white/60 mt-0.5 truncate">{loading ? "—" : teacherEmail}</p>
-                </div>
-              </div>
-              <div className="bg-white px-4 py-3 space-y-2.5">
-                {([
-                  { label: "Teacher Code", value: teacherCode },
-                  { label: "Classes",      value: uniqueClasses.join(", ") || "—" },
-                  { label: "Sections",     value: uniqueSections.join(", ") || "—" },
-                  { label: "Subjects",     value: uniqueSubjects.join(", ") || "—" },
-                ] as const).map(({ label, value }) => (
-                  <div key={label} className="flex items-start justify-between gap-2 border-b border-gray-50 pb-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 shrink-0 mt-0.5">{label}</span>
-                    <span className="text-[11px] font-black text-right text-gray-700 break-words max-w-[160px]">{loading ? "—" : value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Homework Summary */}
-            <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
-              <h3 className="text-[13px] font-black text-gray-800 mb-3 flex items-center gap-2">
-                <ClipboardList size={13} style={{ color: primaryColor }} /> Homework Summary
-              </h3>
+            <div className="bg-white rounded shadow-sm border border-gray-100 p-4">
+              <SectionHeader
+                title="Homework Summary"
+                icon={ClipboardList}
+                primaryColor={primaryColor}
+              />
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { label: "Submitted", value: hwStats.submitted, color: "#6366f1", bg: "#eef2ff" },
@@ -700,9 +676,45 @@ export default function TeacherDashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* ══ RIGHT SIDEBAR ════════════════════════════════════════════════ */}
+          <div className="space-y-3">
+
+            {/* Teacher Profile Card */}
+            <div className="rounded overflow-hidden shadow-md border border-gray-100">
+              <div
+                className="relative p-2 flex items-center gap-3 overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}a0)` }}
+              >
+                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
+                <Ava name={teacherName} color="rgba(255,255,255,0.25)" size={46} photo={teacherInfo?.photo} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 mb-0.5">Teacher Profile</p>
+                  <p className="text-[15px] font-black text-white truncate">{loading ? "—" : teacherName}</p>
+                  <p className="text-[10px] text-white/60 mt-0.5 truncate">{loading ? "—" : teacherEmail}</p>
+                </div>
+              </div>
+              <div className="bg-white px-4 py-3 space-y-2.5">
+                {([
+                  { label: "Teacher Code", value: teacherCode },
+                  { label: "Classes",      value: uniqueClasses.join(", ") || "—" },
+                  // ✅ FIX: show "—" when no sections
+                  { label: "Sections",     value: uniqueSections.length > 0 ? uniqueSections.join(", ") : "—" },
+                  { label: "Subjects",     value: uniqueSubjects.join(", ") || "—" },
+                ] as const).map(({ label, value }) => (
+                  <div key={label} className="flex items-start justify-between gap-2 border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 shrink-0 mt-0.5">{label}</span>
+                    <span className="text-[11px] font-black text-right text-gray-700 break-words max-w-[160px]">{loading ? "—" : value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            
 
             {/* Leave Requests */}
-            <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
+            <div className="bg-white rounded shadow-sm border border-gray-100 p-2">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[13px] font-black text-gray-800 flex items-center gap-2">
                   Leave Requests
@@ -716,25 +728,29 @@ export default function TeacherDashboardPage() {
               {loading ? (
                 <div className="space-y-3">
                   {[0,1].map(i => (
-                    <div key={i} className="flex gap-2.5">
-                      <Sk w={30} h={30} r={99} />
+                    <div key={i} className="flex gap-2.5 items-center">
+                      <Sk w={32} h={32} r={99} />
                       <div className="flex-1 space-y-1.5"><Sk w="65%" h={11} /><Sk w="40%" h={9} /></div>
                     </div>
                   ))}
                 </div>
               ) : leaves.length === 0 ? (
-                <p className="text-center text-[11px] text-gray-400 py-4">No leave requests</p>
+                <EmptyState icon={Calendar} message="No leave requests" />
               ) : (
                 <div className="space-y-3">
                   {leaves.map((l, i) => {
-                    // AFTER
-const name   = l.teacher_name || l.student_name || l.name || `Leave #${l.id ?? i + 1}`;
-const type   = l.leave_type || l.type || "Leave";
-const status = (l.status || "pending").toLowerCase();
-const photo  = l.teacher_photo || l.student_photo || l.photo || undefined;  // ← add this
-return (
-  <div key={l.id ?? i} className="flex gap-2.5 items-center">
-    <Ava name={name} color={status === "approved" ? "#16A34A" : status === "rejected" ? "#DC2626" : "#D97706"} size={30} photo={photo} />
+                    const name   = l.teacher_name || l.student_name || l.name || `Leave #${l.id ?? i + 1}`;
+                    const type   = l.leave_type || l.type || "Leave";
+                    const status = (l.status || "pending").toLowerCase();
+                    const photo  = l.teacher_photo || l.student_photo || l.photo || undefined;
+                    return (
+                      <div key={l.id ?? i} className="flex gap-2.5 items-center p-2 rounded hover:bg-gray-50 transition-colors">
+                        <Ava
+                          name={name}
+                          color={status === "approved" ? "#16A34A" : status === "rejected" ? "#DC2626" : "#D97706"}
+                          size={32}
+                          photo={photo}
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] font-bold text-gray-800 truncate">{name}</p>
                           <p className="text-[10px] text-gray-400">{type}</p>
@@ -750,45 +766,58 @@ return (
               )}
             </div>
 
-            {/* Notifications */}
-            <div className="bg-white rounded shadow-sm border border-gray-100 p-3">
-              <h3 className="text-[13px] font-black text-gray-800 mb-3 flex items-center gap-2">
-                <Bell size={12} style={{ color: primaryColor }} /> Notifications
+            {/* ✅ IMPROVED: Notifications */}
+            <div className="bg-white rounded shadow-sm border border-gray-100 p-2">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[13px] font-black text-gray-800 flex items-center gap-2">
+                  <Bell size={13} style={{ color: primaryColor }} />
+                  Notifications
+                </h3>
                 {notifications.length > 0 && (
                   <span
-                    className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                    className="text-[10px] font-black px-2.5 py-0.5 rounded-full"
                     style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
                   >
                     {notifications.length}
                   </span>
                 )}
-              </h3>
+              </div>
               {loading ? (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {[0,1].map(i => (
-                    <div key={i} className="flex gap-2.5">
-                      <Sk w={28} h={28} r={99} />
-                      <div className="flex-1 space-y-1.5"><Sk w="70%" h={11} /><Sk w="45%" h={9} /></div>
+                    <div key={i} className="flex gap-2.5 items-start">
+                      <Sk w={32} h={32} r={99} />
+                      <div className="flex-1 space-y-1 pt-0.5"><Sk w="70%" h={11} /><Sk w="45%" h={9} /></div>
                     </div>
                   ))}
                 </div>
               ) : notifications.length === 0 ? (
-                <p className="text-center text-[11px] text-gray-400 py-4">No notifications</p>
+                <EmptyState icon={Bell} message="No notifications" />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {notifications.map((n, i) => (
-                    <div key={i} className="flex gap-2.5 items-start">
+                    <div
+                      key={i}
+                      className="flex gap-3 items-start p-1 rounded hover:bg-gray-50 transition-colors"
+                    >
+                      {/* ✅ FIX: icon properly vertically centered with content */}
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                         style={{ backgroundColor: primaryColor + "12" }}
                       >
-                        <Bell size={11} style={{ color: primaryColor }} />
+                        <Bell size={12} style={{ color: primaryColor }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-gray-800 leading-snug">{n.title || n.message || "Notification"}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {n.created_at ? new Date(n.created_at).toLocaleDateString() : ""}
+                        <p className="text-[12px] font-bold text-gray-800 leading-snug">
+                          {n.title || n.message || "Notification"}
                         </p>
+                        {(n.created_at) && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {new Date(n.created_at).toLocaleDateString("en-US", {
+                              month: "short", day: "numeric", year: "numeric"
+                            })}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -796,7 +825,10 @@ return (
               )}
             </div>
 
-            <DashboardCalendar primaryColor={primaryColor} />
+            {/* ✅ IMPROVED: Calendar wrapper for consistent rounding */}
+            <div className="rounded overflow-hidden shadow-sm border border-gray-100">
+              <DashboardCalendar primaryColor={primaryColor} />
+            </div>
           </div>
         </div>
 

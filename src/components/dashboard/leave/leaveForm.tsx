@@ -118,7 +118,10 @@ export default function LeaveForm({
   const onSubmit = async (values: LeaveFormValues) => {
     setLoading(true);
     const formData = new FormData();
-
+    
+    if (fileList.length > 0 && fileList[0].originFileObj) {
+    formData.append("attachment", fileList[0].originFileObj);
+  }
     // Backend मा status पठाउने
     formData.append("status", values.status || "pending");
 
@@ -184,43 +187,43 @@ export default function LeaveForm({
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="px-4 sm:px-6 py-4 space-y-2 overflow-y-auto flex-1">
                {/* Status Section for Management */}
-{isManagement && isUpdate && (
-  <div 
-    className="p-2 rounded-md space-y-1 border" 
-    style={{ 
-      backgroundColor: canUpdateStatus ? `${primaryColor}15` : '#f9fafb',
-      borderColor: canUpdateStatus ? `${primaryColor}30` : '#f3f4f6'
-    }}
-  >
-    <label 
-      className="text-[11px] font-bold flex justify-between items-center uppercase tracking-wider"
-      style={{ color: canUpdateStatus ? primaryColor : '#9ca3af' }}
-    >
-      <span className="flex items-center gap-2">
-        <CheckCircle2 size={14} style={{ color: canUpdateStatus ? primaryColor : '#9ca3af' }} /> 
-        Review Status
-      </span>
-      {!canUpdateStatus && (
-        <span className="flex items-center gap-1 text-gray-400 normal-case font-normal italic">
-          <Lock size={12} /> Superadmin Only
-        </span>
-      )}
-    </label>
-    
-    <Controller
-      name="status"
-      control={form.control}
-      render={({ field }) => (
-        <Select 
-          {...field} 
-          disabled={!canUpdateStatus} 
-          className="w-full h-[35px]" 
-          options={STATUS_OPTIONS} 
-        />
-      )}
-    />
-  </div> 
-)}
+                {isManagement && isUpdate && (
+                  <div 
+                    className="p-2 rounded-md space-y-1 border" 
+                    style={{ 
+                      backgroundColor: canUpdateStatus ? `${primaryColor}15` : '#f9fafb',
+                      borderColor: canUpdateStatus ? `${primaryColor}30` : '#f3f4f6'
+                    }}
+                  >
+                    <label 
+                      className="text-[11px] font-bold flex justify-between items-center uppercase tracking-wider"
+                      style={{ color: canUpdateStatus ? primaryColor : '#9ca3af' }}
+                    >
+                      <span className="flex items-center gap-2">
+                        <CheckCircle2 size={14} style={{ color: canUpdateStatus ? primaryColor : '#9ca3af' }} /> 
+                        Review Status
+                      </span>
+                      {!canUpdateStatus && (
+                        <span className="flex items-center gap-1 text-gray-400 normal-case font-normal italic">
+                          <Lock size={12} /> Superadmin Only
+                        </span>
+                      )}
+                    </label>
+                    
+                    <Controller
+                      name="status"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select 
+                          {...field} 
+                          disabled={!canUpdateStatus} 
+                          className="w-full h-[35px]" 
+                          options={STATUS_OPTIONS} 
+                        />
+                      )}
+                    />
+                  </div> 
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormItem>

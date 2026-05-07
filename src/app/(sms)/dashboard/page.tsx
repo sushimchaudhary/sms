@@ -232,6 +232,7 @@ export default function DashboardPage() {
   const [leaves,         setLeaves]         = useState<any[]>([]);
 
   const fetchAll = useCallback(async (isRefresh = false) => {
+    
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
@@ -262,17 +263,34 @@ export default function DashboardPage() {
         attR, payR, expR, sfR,
       ] = res.map(v);
 
-      const rawTeachers = getItems(tchR), rawStaff = getItems(stfR);
-      let resolvedTeachers: any[], resolvedStaff: any[];
-      if (rawTeachers.length > 0 || rawStaff.length > 0) {
-        resolvedTeachers = rawTeachers; resolvedStaff = rawStaff;
-      } else {
-        const split = splitStaffAndTeachers(rawTeachers.length ? rawTeachers : rawStaff);
-        resolvedTeachers = split.teachers; resolvedStaff = split.staff;
-      }
+      // const rawTeachers = getItems(tchR), rawStaff = getItems(stfR);
+      // let resolvedTeachers: any[], resolvedStaff: any[];
+      // if (rawTeachers.length > 0 || rawStaff.length > 0) {
+      //   resolvedTeachers = rawTeachers; resolvedStaff = rawStaff;
+      // } else {
+      //   const split = splitStaffAndTeachers(rawTeachers.length ? rawTeachers : rawStaff);
+      //   resolvedTeachers = split.teachers; resolvedStaff = split.staff;
+      // }
+
+        const rawTeachers = getItems(tchR);
+        const rawStaff = getItems(stfR);
+
+        let resolvedTeachers: any[] = rawTeachers;
+        let resolvedStaff: any[] = rawStaff;
+
+        // Only fall back to splitting if BOTH dedicated endpoints returned nothing
+        if (rawTeachers.length === 0 && rawStaff.length === 0) {
+          const combined = getItems(tchR).length ? getItems(tchR) : getItems(stfR);
+          const split = splitStaffAndTeachers(combined);
+          resolvedTeachers = split.teachers;
+          resolvedStaff = split.staff;
+        }
+console.log("rawTeachers:", rawTeachers.length, "rawStaff:", rawStaff.length);
+console.log("stfR result:", stfR);
 
       setCounts({
-        students: getCount(studR), teachers: resolvedTeachers.length,
+        students: getCount(studR), 
+        teachers: resolvedTeachers.length,
         staff: resolvedStaff.length,
         staffTeachers: [...resolvedTeachers, ...resolvedStaff].length,
         parents: getCount(parR), classes: getCount(clsR),

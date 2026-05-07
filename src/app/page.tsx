@@ -25,7 +25,6 @@ export default async function Home() {
       const userData = JSON.parse(userInfoRaw);
       const userRole = userData.role?.toLowerCase();
 
-      // Role अनुसार रिडाइरेक्ट लजिक
       if (userRole === "super admin" || userRole === "admin") {
         redirect("/dashboard");
       } else if (userRole === "staff") {

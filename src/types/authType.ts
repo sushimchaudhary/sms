@@ -71,4 +71,21 @@ export interface IUser {
     url: string,
     thumb: string,
   };
+  
+  teacher?: {
+    id: number;
+    name: string;
+    email: string;
+    code: string;
+  };
+  student?: {
+    id: number;
+    name: string;
+  };
+  staff?: {
+    id: number;
+    name: string;
+    designation: string;
+  };
 }
+

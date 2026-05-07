@@ -66,7 +66,7 @@ export default function SchoolManagementPage() {
           >
             <div className="flex items-center gap-2">
              
-              <span>Create</span>
+              <span>Register</span>
             </div>
           </ThemedButton>
         </div>

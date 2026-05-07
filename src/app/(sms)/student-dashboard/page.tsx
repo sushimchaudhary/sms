@@ -211,39 +211,59 @@ export default function StudentDashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  const fetchAll = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
-    setError(null);
-    try {
-      const [dashR, lvR, ntR] = await Promise.allSettled([
-        StudentServices.getStudentDashboard(),
-        LeaveServices.getAllLeaves?.(),
-        NotificationServices.getAllNotifications?.(),
-      ]);
+// ─── Add this helper just above fetchAll ─────────────────────────────────────
+// Matches a leave row to the currently logged-in student
+function isMyLeave(item: any, user: any): boolean {
+  if (!user) return false;
 
-      const v = (r: PromiseSettledResult<any>) =>
-        r.status === "fulfilled" ? r.value : null;
+  // 1. Primary: student profile id vs student_enrollment field
+  const myProfileId = user?.student?.id ?? user?.id;
+  if (myProfileId != null && item.student_enrollment === myProfileId) return true;
 
-      // ── Primary ─────────────────────────────────────────────────────────
-      const dash: StudentDashboardResponse | null = v(dashR);
-      setStudentInfo(dash?.student        ?? null);
-      setEnrollment(dash?.enrollment      ?? null);
-      setAttendance(dash?.attendance      ?? []);
-      setHomeworks(dash?.recent_homeworks ?? []);
-      setNotes(dash?.recent_notes         ?? []);
+  // 2. Fallback: name comparison
+  const myName  = (user?.student?.name || user?.name || "").toLowerCase().trim();
+  const rowName = (item.student_name   || "").toLowerCase().trim();
+  return myName !== "" && rowName !== "" && rowName === myName;
+}
 
-      // ── Secondary (gracefully optional) ─────────────────────────────────
-      setLeaves(getItems(v(lvR)).slice(0, 5));
-      setNotifications(getItems(v(ntR)).slice(0, 5));
+// ─── Replace fetchAll ─────────────────────────────────────────────────────────
+const fetchAll = useCallback(async (isRefresh = false) => {
+  if (isRefresh) setRefreshing(true); else setLoading(true);
+  setError(null);
+  try {
+    const [dashR, lvR, ntR] = await Promise.allSettled([
+      StudentServices.getStudentDashboard(),
+      LeaveServices.getAllLeaves?.(),
+      NotificationServices.getAllNotifications?.(),
+    ]);
 
-      setLastSync(new Date());
-    } catch (e: any) {
-      setError(e?.message || "Failed to load dashboard");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+    const v = (r: PromiseSettledResult<any>) =>
+      r.status === "fulfilled" ? r.value : null;
+
+    // ── Primary ─────────────────────────────────────────────────────────
+    const dash: StudentDashboardResponse | null = v(dashR);
+    setStudentInfo(dash?.student        ?? null);
+    setEnrollment(dash?.enrollment      ?? null);
+    setAttendance(dash?.attendance      ?? []);
+    setHomeworks(dash?.recent_homeworks ?? []);
+    setNotes(dash?.recent_notes         ?? []);
+
+    // ── Leaves — filter to THIS student's rows only ──────────────────────
+    const allLeaves = getItems(v(lvR));
+    const myLeaves  = allLeaves.filter((item: any) => isMyLeave(item, user));
+    setLeaves(myLeaves.slice(0, 5));
+
+    // ── Notifications ────────────────────────────────────────────────────
+    setNotifications(getItems(v(ntR)).slice(0, 5));
+
+    setLastSync(new Date());
+  } catch (e: any) {
+    setError(e?.message || "Failed to load dashboard");
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, [user]); // ← add `user` to deps so the filter has the latest auth data
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -268,15 +288,31 @@ export default function StudentDashboardPage() {
   const sessionName = enrollment?.session         ?? user?.active_session?.name ?? "—";
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  const attStats = useMemo(() => {
-    const total   = attendance.length;
-    const present = attendance.filter(a =>
-      ["present", "late"].includes((a.status || "").toLowerCase())
-    ).length;
-    const absent = total - present;
-    const pct    = total > 0 ? Math.round((present / total) * 100) : 0;
-    return { total, present, absent, pct };
-  }, [attendance]);
+const attStats = useMemo(() => {
+  const total   = attendance.length;
+
+  const present = attendance.filter(a =>
+    ["present", "late"].includes((a.status || "").toLowerCase().trim())
+  ).length;
+
+  const absent = attendance.filter(a =>
+    (a.status || "").toLowerCase().trim() === "absent"
+  ).length;
+
+  const leave = attendance.filter(a =>
+    (a.status || "").toLowerCase().trim() === "leave"
+  ).length;
+
+  const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+
+  return { total, present, absent, leave, pct };
+}, [attendance]);
+
+
+useEffect(() => {
+  console.log("Attendance records:", attendance);
+  console.log("Attendance count:", attendance.length);
+}, [attendance]);
 
   const hwStats = useMemo(() => {
     const total     = homeworks.length;

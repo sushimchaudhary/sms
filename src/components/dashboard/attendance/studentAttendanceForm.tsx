@@ -16,16 +16,58 @@ import { Form, FormItem } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { toast } from "sonner";
-import { ConfigProvider, Select, DatePicker, Input } from "antd";
+import { ConfigProvider, Select,  Input } from "antd";
 import { CancelButton } from "@/components/ui/CancleButton";
 import dayjs from "dayjs";
 
 // Services (तपाईँको API structure अनुसार import गर्नुहोला)
 import { AttendanceServices } from "@/services/attendanceServices";
-import { StudentServices } from "@/services/studentServices"; 
 import { TeacherServices } from "@/services/teacherServices";
 import useAuth from "@/lib/hooks/useAuth";
 import { EnrollmentServices } from "@/services/studentEnrollment";
+
+import NepaliDate from "nepali-date-converter";
+// ─── install: npm install nepali-datepicker-reactjs ───
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import "nepali-datepicker-reactjs/dist/index.css";
+import { setDate } from "date-fns/setDate";
+import CalendarPicker from "@/components/ui/Calendar";
+import { date } from "zod/v3";
+
+
+
+// ── Helpers ──────────────────────────────────────────────
+
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" (for the picker value) */
+const adToBSValue = (adStr: string): string => {
+  if (!adStr) return "";
+  try {
+    const nd = new NepaliDate(new Date(adStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+/** BS "YYYY-MM-DD" → AD "YYYY-MM-DD" (to save in form state) */
+const bsToADValue = (bsStr: string): string => {
+  if (!bsStr) return "";
+  try {
+    const [y, m, d] = bsStr.split("-").map(Number);
+    const nd = new NepaliDate(y, m - 1, d);
+    const ad = nd.toJsDate();
+    const ay = ad.getFullYear();
+    const am = String(ad.getMonth() + 1).padStart(2, "0");
+    const adDay = String(ad.getDate()).padStart(2, "0");
+    return `${ay}-${am}-${adDay}`;
+  } catch {
+    return "";
+  }
+};
+
 
 export default function StudentAttendanceForm({ initialData, onClose, onSuccess, isOpen }: any) {
   const isUpdate = !!initialData;
@@ -145,13 +187,18 @@ export default function StudentAttendanceForm({ initialData, onClose, onSuccess,
                     <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
                       <CalendarDays size={12} /> Date
                     </label>
-                    <Controller name="date" control={form.control} render={({ field }) => (
-                      <DatePicker 
-                        className="w-full h-[33px]" 
-                        value={field.value ? dayjs(field.value) : null}
-                        onChange={(date) => field.onChange(date ? date.format("YYYY-MM-DD") : "")}
-                      />
-                    )} />
+                     <Controller 
+                      name="date" 
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="w-full relative dynamic-nepali-container [&>.ndp-container]:!z-[9999]">
+                         <CalendarPicker 
+                            value={field.value ? adToBSValue(field.value) : new NepaliDate().format("YYYY-MM-DD")}  
+                            onChange={(date) => field.onChange(date)}
+                          />    
+                        </div>
+                      )} 
+                    />
                   </FormItem>
                 </div>
 

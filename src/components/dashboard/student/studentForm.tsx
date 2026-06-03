@@ -1,3 +1,6 @@
+
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -21,13 +24,17 @@ import { ThemedButton } from "@/components/ui/themedButton";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { toast } from "sonner";
-import { ConfigProvider, Select, DatePicker } from "antd"; // Added DatePicker
+import { ConfigProvider, Select } from "antd"; 
 import { CancelButton } from "@/components/ui/CancleButton";
 import { StudentServices } from "@/services/studentServices";
 import { ParentServices } from "@/services/parentServices";
 import useAuth from "@/lib/hooks/useAuth";
 import cookies from "js-cookie";
-import dayjs from "dayjs"; // Required for AntD 5 DatePicker
+import dayjs from "dayjs"; 
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import NepaliDate from "nepali-date-converter";
+import "nepali-datepicker-reactjs/dist/index.css";
+import CalendarPicker from "@/components/ui/Calendar";
 
 interface StudentFormValues {
   email: string;
@@ -40,6 +47,38 @@ interface StudentFormValues {
   gender: string | null;
   photo?: any;
 }
+
+// ── Helpers ──────────────────────────────────────────────
+
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" */
+const adToBSValue = (adStr: string): string => {
+  if (!adStr) return "";
+  try {
+    const nd = new NepaliDate(new Date(adStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+/** BS "YYYY-MM-DD" → AD "YYYY-MM-DD" */
+const bsToADValue = (bsStr: string): string => {
+  if (!bsStr) return "";
+  try {
+    const [y, m, d] = bsStr.split("-").map(Number);
+    const nd = new NepaliDate(y, m - 1, d);
+    const ad = nd.toJsDate();
+    const ay = ad.getFullYear();
+    const am = String(ad.getMonth() + 1).padStart(2, "0");
+    const adDay = String(ad.getDate()).padStart(2, "0");
+    return `${ay}-${am}-${adDay}`;
+  } catch {
+    return "";
+  }
+};
 
 export default function StudentForm({
   initialData,
@@ -99,25 +138,20 @@ export default function StudentForm({
         cookieUser?.school_id;
 
       if (initialData) {
-         setPhotoPreview(initialData.photo_url || initialData.photo || null);
+        setPhotoPreview(initialData.photo_url || initialData.photo || null);
 
         form.reset({
           email: initialData.user_email || initialData.user?.email || "",
-          first_name:
-            initialData.first_name_display ||
-            initialData.user?.first_name ||
-            "",
-          last_name:
-            initialData.last_name_display || initialData.user?.last_name || "",
+          first_name: initialData.first_name_display || initialData.user?.first_name || "",
+          last_name: initialData.last_name_display || initialData.user?.last_name || "",
           school_id: currentSchoolId || "",
           parent: initialData.parent?.id || initialData.parent || null,
-          // Convert string from API to dayjs for AntD
-          dob: initialData.dob ? dayjs(initialData.dob) : null,
+          dob: initialData.dob ? dayjs(initialData.dob).format("YYYY-MM-DD") : null,
           gender: initialData.gender || null,
           password: "",
         });
       } else {
-          setPhotoPreview(null);
+        setPhotoPreview(null);
         form.reset({
           email: "",
           first_name: "",
@@ -132,7 +166,6 @@ export default function StudentForm({
     }
   }, [initialData, isOpen, loggedInUser, form]);
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -140,9 +173,9 @@ export default function StudentForm({
         toast.error("Image size should be less than 5MB");
         return;
       }
-  
-      form.setValue("photo", file); 
-  
+
+      form.setValue("photo", file);
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result as string);
@@ -151,15 +184,11 @@ export default function StudentForm({
     }
   };
 
-
   const onSubmit = async (values: StudentFormValues) => {
     setLoading(true);
     try {
       const formData = new FormData();
-
-      // १. इमेल थप्नुहोस् (यो छुटेको थियो)
       formData.append("email", values.email || "");
-      
       formData.append("first_name", values.first_name || "");
       formData.append("last_name", values.last_name || "");
       
@@ -167,7 +196,7 @@ export default function StudentForm({
         formData.append("parent", String(values.parent));
       }
 
-      formData.append("dob", values.dob ? values.dob.format("YYYY-MM-DD") : "");
+      formData.append("dob", values.dob || "");
       formData.append("gender", values.gender || "");
 
       if (values.school_id) {
@@ -178,7 +207,6 @@ export default function StudentForm({
         formData.append("photo", values.photo);
       }
 
-      // २. पासवर्ड चेक (Update मा नहुन सक्छ, तर New Registration मा अनिवार्य छ)
       if (values.password && values.password.trim() !== "") {
         formData.append("password", values.password);
       }
@@ -200,17 +228,12 @@ export default function StudentForm({
       handleClose();
     } catch (err: any) {
       const serverErrors = err.response?.data;
-
       if (serverErrors) {
         if (typeof serverErrors === "object") {
           Object.keys(serverErrors).forEach((key) => {
             const errorValue = serverErrors[key];
-            const message = Array.isArray(errorValue)
-              ? errorValue[0]
-              : errorValue;
-
-            const fieldName =
-              key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
+            const message = Array.isArray(errorValue) ? errorValue[0] : errorValue;
+            const fieldName = key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
             toast.error(`${fieldName}: ${message}`);
           });
         } else if (serverErrors.detail) {
@@ -221,7 +244,6 @@ export default function StudentForm({
       } else {
         toast.error("Network error. Please check your connection.");
       }
-
       console.error("Submission error:", err);
     } finally {
       setLoading(false);
@@ -237,24 +259,18 @@ export default function StudentForm({
       <div
         className={`fixed inset-0 z-[101] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
       >
-        <div className="w-full max-w-2xl bg-white rounded shadow-md border border-gray-200 overflow-hidden font-mukta">
+        <div className="w-full max-w-2xl bg-white rounded shadow-md border border-gray-200 overflow-visible font-mukta">
           <ConfigProvider
             theme={{
               token: {
                 colorPrimary: primaryColor,
                 borderRadius: 4,
-
                 controlOutlineWidth: 1,
-
                 controlOutline: `${primaryColor}1A`,
               },
               components: {
-                Input: {
-                  activeBorderColor: primaryColor,
-                },
-                Select: {
-                  colorPrimaryHover: primaryColor,
-                },
+                Input: { activeBorderColor: primaryColor },
+                Select: { colorPrimaryHover: primaryColor },
               },
             }}
           >
@@ -276,11 +292,11 @@ export default function StudentForm({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="px-6 py-5 space-y-4"
               >
-
+                {/* Profile Photo */}
                 <div className="flex flex-col items-center justify-center pb-4 border-b border-dashed border-gray-200">
                   <div className="relative group">
-                    <div 
-                      onClick={() => fileInputRef.current?.click()} 
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
                       className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 transition-all group-hover:border-primary cursor-pointer hover:bg-gray-100"
                       style={{ borderColor: photoPreview ? primaryColor : '#e5e7eb' }}
                     >
@@ -290,9 +306,6 @@ export default function StudentForm({
                         <Camera size={30} className="text-gray-300" />
                       )}
                     </div>
-                
-                   
-                
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -303,7 +316,8 @@ export default function StudentForm({
                   </div>
                   <p className="text-[11px] text-gray-400 mt-2">Upload Profile Photo (Max 5MB)</p>
                 </div>
-                
+
+                {/* Names */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldControl
                     form={form}
@@ -321,6 +335,7 @@ export default function StudentForm({
                   />
                 </div>
 
+                {/* Email / Password */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldControl
                     form={form}
@@ -328,7 +343,7 @@ export default function StudentForm({
                     label="Email Address"
                     icon={<Mail size={12} />}
                     placeholder="student@example.com"
-                    disabled={isUpdate}
+                    
                   />
                   <FormFieldControl
                     form={form}
@@ -340,7 +355,8 @@ export default function StudentForm({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Parent / DOB & Gender */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
                   <FormItem className="w-full">
                     <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
                       <Users size={12} /> Select Parent
@@ -364,8 +380,9 @@ export default function StudentForm({
                     />
                   </FormItem>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <FormItem className="w-full">
+                  <div className="grid grid-cols-2 gap-2 overflow-visible">
+                    {/* ── DOB PART (CLEAN CODE) ── */}
+                    <FormItem className="w-full relative overflow-visible">
                       <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
                         <Calendar size={12} /> DOB
                       </label>
@@ -373,26 +390,20 @@ export default function StudentForm({
                         name="dob"
                         control={form.control}
                         render={({ field }) => (
-                          <DatePicker
-                            {...field}
-                            placeholder="YYYY-MM-DD"
-                            className="w-full h-[33px]"
-                            format="YYYY-MM-DD"
-                            allowClear
-                            panelRender={(panelNode) => (
-                              <div
-                                style={{
-                                  transform: "scale(0.75)",
-                                  transformOrigin: "top left",
-                                  width: "133.33%",
-                                  marginBottom: "-80px",
-                                  marginRight: "-65px",
-                                }}
-                              >
-                                {panelNode}
-                              </div>
-                            )}
-                          />
+                          <div className="nepali-datepicker-wrapper-custom w-full">
+                            <NepaliDatePicker
+                              className="!w-[300px] " 
+                                inputClassName=" h-[33px] px-2 text-[11px] border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                value={adToBSValue(field.value)}
+                              onChange={(bsVal: string) => field.onChange(bsToADValue(bsVal))}
+                              options={{ calenderLocale: "ne", valueLocale: "en" }}
+                              />
+
+                              {/* <CalendarPicker   
+                            value={field.value} 
+                            onChange={(date) => field.onChange(date)}
+                            /> */}
+                          </div>
                         )}
                       />
                     </FormItem>
@@ -422,6 +433,7 @@ export default function StudentForm({
                   </div>
                 </div>
 
+                {/* Footer Actions */}
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                   <CancelButton onClick={handleClose} disabled={loading} />
                   <ThemedButton type="submit" size="sm" disabled={loading}>
@@ -446,7 +458,6 @@ export default function StudentForm({
   );
 }
 
-// Reuse your FormFieldControl component with Eye toggle...
 const FormFieldControl = ({
   form,
   name,

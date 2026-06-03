@@ -31,6 +31,7 @@ import ConfirmModal from "../../delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { CancelButton } from "@/components/ui/CancleButton";
 import NotificationDetailModal from "@/components/ui/notificationModel";
+import NepaliDate from "nepali-date-converter";
 
 interface Notification {
   id: number;
@@ -53,6 +54,22 @@ interface NotificationTableProps {
   searchQuery?: string;
 }
 
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    // मितिलाई सही ढाँचामा बदल्ने
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
+
+  
 const PAGE_SIZE = 20;
 
 
@@ -71,6 +88,10 @@ const NotificationTable = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [messageModal, setMessageModal] = useState<Notification | null>(null);
+ const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
+
 
   // --- Fetch Notifications ---
  const fetchNotifications = React.useCallback(async () => {
@@ -117,7 +138,7 @@ const NotificationTable = ({
     doc.setFontSize(16);
     doc.text("Notification Report", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Page: ${currentPage} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(`Page: ${currentPage} | Date: ${formatToNepaliBS(new Date().toISOString())}`, 14, 22);
 
     const tableData = paginatedItems.map((item, index) => [
       (currentPage - 1) * PAGE_SIZE + index + 1,
@@ -126,7 +147,7 @@ const NotificationTable = ({
       item.target_role,
       item.is_broadcast ? "Yes" : "No",
       item.is_read ? "Read" : "Unread",
-      new Date(item.created_at).toLocaleDateString(),
+      formatToNepaliBS(item.created_at),
     ]);
 
     autoTable(doc, {
@@ -152,7 +173,7 @@ const NotificationTable = ({
         <td>${item.target_role}</td>
         <td>${item.is_broadcast ? "Yes" : "No"}</td>
         <td>${item.is_read ? "Read" : "Unread"}</td>
-        <td>${new Date(item.created_at).toLocaleDateString()}</td>
+        <td>${formatToNepaliBS(item.created_at)}</td>
       </tr>
     `
       )
@@ -193,28 +214,26 @@ const NotificationTable = ({
   };
 
 
+// NotificationTable.tsx भित्रको handleViewNotification
 const handleViewNotification = async (notification: Notification) => {
   setMessageModal(notification);
 
   if (!notification.is_read) {
     try {
-      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const currentUserId = currentUser.id; 
-
+      // notification.id मात्र पठाउनुहोस् र is_read: true गर्नुहोस्
       await NotificationServices.updateNotification(notification.id, {
-        is_read: true,
-        user: currentUserId 
+        is_read: true 
       });
 
+      // UI update
       setNotificationsList((prev) =>
         prev.map((n) =>
-          n.id === notification.id 
-            ? { ...n, is_read: true, user: currentUserId } 
-            : n
+          n.id === notification.id ? { ...n, is_read: true } : n
         )
       );
     } catch (error) {
       console.error("Update failed:", error);
+      toast.error("Failed to mark as read");
     }
   }
 };
@@ -380,11 +399,7 @@ const handleViewNotification = async (notification: Notification) => {
                             <div className="flex items-center gap-1.5">
                               <CalendarDays size={10} className="text-[#8094ae]" />
                               <span className="text-[10px] text-[#526484]">
-                                {new Date(item.created_at).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
+                                {formatToNepaliBS(item.created_at)}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">

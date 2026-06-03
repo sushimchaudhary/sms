@@ -15,6 +15,23 @@ import { LeaveServices } from "@/services/leaveServices";
 import { ThemedButton } from "@/components/ui/themedButton";
 import useAuth from "@/lib/hooks/useAuth";
 import { useTheme } from "@/lib/context/ThemeContext";
+import NepaliDate from "nepali-date-converter";
+
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    // मितिलाई सही ढाँचामा बदल्ने
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Leave {
@@ -79,6 +96,8 @@ const FilterDropdown = ({ label, value, options, onChange, icon, primaryColor }:
   const selected = options.find((o) => o.value === value);
   const isActive = value !== "all";
 
+
+  
   return (
       <div ref={ref} className="relative">
       <button
@@ -160,6 +179,10 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
   const [viewFilter,   setViewFilter]   = useState<ViewFilter>("all"); // ✅ NEW
 
   const { loggedInUser } = useAuth();
+
+    const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
 
   // ─── Role flags ───────────────────────────────────────────────────────────
   const role      = (loggedInUser?.role || "").toLowerCase();
@@ -327,7 +350,7 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
         getApplicantName(item),
         getApplicantRole(item),
         item.leave_type.toUpperCase(),
-        `${dayjs(item.start_date).format("DD MMM")} - ${dayjs(item.end_date).format("DD MMM, YYYY")}`,
+        `${formatToNepaliBS(item.start_date)} - ${formatToNepaliBS(item.end_date)}`,
         `${dayjs(item.end_date).diff(dayjs(item.start_date), "day") + 1} Day(s)`,
         item.status.toUpperCase(),
       ]),
@@ -340,32 +363,40 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
   };
 
   // ─── Print ────────────────────────────────────────────────────────────────
-  const handlePrint = () => {
-    const rows = paginatedItems.map((item, i) => `
+const handlePrint = () => {
+  const rows = paginatedItems.map((item, i) => {
+    // Calculate the difference using dayjs directly on the raw ISO/AD date strings
+    const start = dayjs(item.start_date);
+    const end = dayjs(item.end_date);
+    const daysCount = end.diff(start, "day") + 1;
+
+    return `
       <tr>
         <td>${(currentPage - 1) * PAGE_SIZE + i + 1}</td>
         <td>${getApplicantName(item)}</td>
         <td>${getApplicantRole(item)}</td>
         <td>${item.leave_type}</td>
-        <td>${dayjs(item.start_date).format("DD MMM")} – ${dayjs(item.end_date).format("DD MMM, YYYY")}</td>
-        <td>${dayjs(item.end_date).diff(dayjs(item.start_date), "day") + 1} Day(s)</td>
+        <td>${formatToNepaliBS(item.start_date)} – ${formatToNepaliBS(item.end_date)}</td>
+        <td>${daysCount} Day(s)</td>
         <td>${item.status}</td>
-      </tr>`).join("");
-    const w = window.open("", "_blank");
-    if (w) {
-      w.document.write(`<html><head><title>Leave List</title>
-        <style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}
-        th,td{border:1px solid #e2e8f0;padding:10px;text-align:left;font-size:12px}
-        th{background:#f8fafc;color:#64748b;text-transform:uppercase}h2{color:#1e293b}</style></head>
-        <body><h2>Leave Request Report</h2>
-        <p>Page ${currentPage} | Total: ${filteredData.length} records</p>
-        <table><thead><tr><th>S.N.</th><th>Name</th><th>Role</th><th>Type</th>
-        <th>Duration</th><th>Days</th><th>Status</th></tr></thead>
-        <tbody>${rows}</tbody></table></body></html>`);
-      w.document.close();
-      w.print();
-    }
-  };
+      </tr>`;
+  }).join("");
+
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.write(`<html><head><title>Leave List</title>
+      <style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}
+      th,td{border:1px solid #e2e8f0;padding:10px;text-align:left;font-size:12px}
+      th{background:#f8fafc;color:#64748b;text-transform:uppercase}h2{color:#1e293b}</style></head>
+      <body><h2>Leave Request Report</h2>
+      <p>Page ${currentPage} | Total: ${filteredData.length} records</p>
+      <table><thead><tr><th>S.N.</th><th>Name</th><th>Role</th><th>Type</th>
+      <th>Duration</th><th>Days</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody></table></body></html>`);
+    w.document.close();
+    w.print();
+  }
+};
 
   // ─── Checkboxes ───────────────────────────────────────────────────────────
   const handleSelectAll = () => {
@@ -604,7 +635,7 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                             )}
                           </span>
                           <span className="text-[9px] text-gray-400 ml-3.5">
-                            Applied: {dayjs(item.created_at).format("DD MMM, YYYY")}
+                            Applied: {formatToNepaliBS(item.created_at)}
                           </span>
                         </div>
                       </td>
@@ -637,8 +668,8 @@ const LeaveTable = ({ onEdit, refreshTrigger, searchQuery = "" }: LeaveTableProp
                         <div className="flex flex-col text-[10px] text-slate-600 font-medium">
                           <div className="flex items-center gap-1 whitespace-nowrap">
                             <Calendar size={10} className="text-rose-400 flex-shrink-0" />
-                            {dayjs(item.start_date).format("DD MMM")} –{" "}
-                            {dayjs(item.end_date).format("DD MMM, YYYY")}
+                            {formatToNepaliBS(item.start_date)} –{" "}
+                            {formatToNepaliBS(item.end_date)}
                           </div>
                           <span className="text-[9px] text-slate-400 ml-3.5">
                             {days} Day{days > 1 ? "s" : ""}

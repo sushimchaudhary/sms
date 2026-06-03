@@ -16,6 +16,49 @@ import { ClassServices } from "@/services/classServices";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { CancelButton } from "@/components/ui/CancleButton";
 
+
+import NepaliDate from "nepali-date-converter";
+// ─── install: npm install nepali-datepicker-reactjs ───
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import "nepali-datepicker-reactjs/dist/index.css";
+import CalendarPicker from "@/components/ui/Calendar";
+
+
+
+// ── Helpers ──────────────────────────────────────────────
+
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" (for the picker value) */
+const adToBSValue = (adStr: string): string => {
+  if (!adStr) return "";
+  try {
+    const nd = new NepaliDate(new Date(adStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+/** BS "YYYY-MM-DD" → AD "YYYY-MM-DD" (to save in form state) */
+const bsToADValue = (bsStr: string): string => {
+  if (!bsStr) return "";
+  try {
+    const [y, m, d] = bsStr.split("-").map(Number);
+    const nd = new NepaliDate(y, m - 1, d);
+    const ad = nd.toJsDate();
+    const ay = ad.getFullYear();
+    const am = String(ad.getMonth() + 1).padStart(2, "0");
+    const adDay = String(ad.getDate()).padStart(2, "0");
+    return `${ay}-${am}-${adDay}`;
+  } catch {
+    return "";
+  }
+};
+
+
+
 /* ─── Types ─────────────────────────────────────────────────────── */
 type AttendanceStatus = "present" | "absent" | "leave" | "late";
 
@@ -27,10 +70,6 @@ interface ClassRoom {
   session?: { _id: string; name: string };
 }
 
-interface SectionOption {
-  id: number;
-  name: string;
-}
 
 interface Enrollment {
   id: number;
@@ -344,7 +383,7 @@ const sectionOptions = useMemo(() => {
       {/* Modal */}
       <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
         <div
-          className="w-full max-w-5xl bg-white rounded shadow-lg border border-gray-200 overflow-hidden font-mukta flex flex-col max-h-[90vh] transition-all duration-250"
+          className="w-full max-w-5xl bg-white rounded shadow-lg border border-gray-200 overflow-visible font-mukta flex flex-col max-h-[90vh] transition-all duration-250"
           style={{
             opacity:   animated ? 1 : 0,
             transform: animated ? "scale(1) translateY(0)" : "scale(0.97) translateY(10px)",
@@ -413,11 +452,24 @@ const sectionOptions = useMemo(() => {
               {/* Date */}
               <div>
                 <label className="text-[10px] font-bold text-[#8094ae] uppercase mb-1 block">Date</label>
-                <DatePicker
-                  className="w-full h-[33px]"
-                  value={date ? dayjs(date) : null}
-                  onChange={(d) => setDate(d ? d.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"))}
-                />
+               
+                        <div className="w-full relative dynamic-nepali-container [&>.ndp-container]:!z-[9999]">
+                          {/* <NepaliDatePicker
+                            inputClassName="w-full h-[35px] px-3 py-1.5 text-sm text-gray-800 bg-white border border-gray-300 rounded shadow-xs focus:border-blue-500 focus:outline-hidden transition-all placeholder:text-gray-400 font-sans"
+                            value={adToBSValue(date)}
+                            onChange={(bsVal: string) => setDate(bsToADValue(bsVal))}
+                            options={{
+                              calenderLocale: "ne",
+                              valueLocale: "en",
+                            }}
+                          /> */}
+
+                          <CalendarPicker 
+                            value={date ? adToBSValue(date) : new NepaliDate().format("YYYY-MM-DD")}  
+                            onChange={(date) => setDate(date)}
+                            />   
+                        </div>
+                   
               </div>
             </div>
 
@@ -444,7 +496,7 @@ const sectionOptions = useMemo(() => {
                   <span>Marking Progress</span>
                   <span>{markedCount} / {enrollments.length} marked</span>
                 </div>
-                <div className="h-[3px] bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-[3px] bg-gray-100 rounded-full overflow-visible">
                   <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
                 </div>
               </div>

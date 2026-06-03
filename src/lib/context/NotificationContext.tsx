@@ -13,18 +13,16 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const refreshNotifications = async () => {
+  // NotificationContext.tsx मा
+// NotificationContext.tsx मा यो परिवर्तन गर्नुहोस्
+const refreshNotifications = async () => {
   try {
     const res = await NotificationServices.getUnreadCount();
     
+    // यहाँ log गरेर हेर्नुहोस् कि यो '2' कहिले '0' हुन्छ
+    console.log("API बाट आएको ताजा Count:", res); 
 
-    const count = 
-      res.count !== undefined ? res.count :       
-      res.total_count !== undefined ? res.total_count : 
-      Array.isArray(res) ? res.length :            
-      0;
-
-    // console.log("अन्तिममा सेट गरिएको Count:", count);
+    const count = Array.isArray(res) ? res.length : (res.count || 0);
     setUnreadCount(count);
   } catch (err) {
     console.error("Failed to fetch notification count", err);

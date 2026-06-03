@@ -14,6 +14,7 @@ import {
   SearchX,
   Briefcase,
   Fingerprint,
+  Phone,
   User,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ interface Teacher {
   user_email?: string;
   school: any;
   qualification: string;
+  user_phone: string;
   code: string;
   photo?: string | null;      
   photo_url?: string | null;
@@ -115,13 +117,15 @@ const TeachersTable = ({
       const email = (t.user?.email || t.user_email || "").toLowerCase();
       const code = (t.code || "").toLowerCase();
       const qualification = (t.qualification || "").toLowerCase();
+      const phone = (t.user_phone || "").toLowerCase();
       const query = searchQuery.toLowerCase();
 
       return (
         name.includes(query) ||
         email.includes(query) ||
         code.includes(query) ||
-        qualification.includes(query)
+        qualification.includes(query) ||
+        phone.includes(query)
       );
     });
     setFilteredData(result);
@@ -150,11 +154,12 @@ const TeachersTable = ({
       item.user?.full_name || item.full_name || "N/A",
       item.qualification || "N/A",
       resolveSchoolName(item.school),
+      item.user_phone || "N/A",
       item.user?.email || item.user_email || "N/A",
     ]);
 
     autoTable(doc, {
-      head: [["S.N.", "Teacher ID", "Name", "Qualification", "Institution", "Email"]],
+      head: [["S.N.", "Teacher ID", "Name", "Qualification", "Institution", "Phone", "Email"]],
       body: tableData,
       startY: 28,
       styles: { fontSize: 8 },
@@ -173,6 +178,7 @@ const TeachersTable = ({
         <td>${item.user?.full_name || item.full_name}</td>
         <td>${item.qualification}</td>
         <td>${resolveSchoolName(item.school)}</td>
+        <td>${item.user_phone}</td>
         <td>${item.user?.email || item.user_email}</td>
       </tr>
     `).join("");
@@ -202,6 +208,7 @@ const TeachersTable = ({
                   <th>Name</th>
                   <th>Qualification</th>
                   <th>Institution</th>
+                  <th>Phone</th>
                   <th>Email</th>
                 </tr>
               </thead>
@@ -270,6 +277,7 @@ const TeachersTable = ({
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">S.N.</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Teacher Info</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Institution</th>
+                <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Phone</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Details</th>
                 <th className="px-4 py-1 text-[11px] font-bold text-[#8094ae] uppercase text-right w-24">Action</th>
               </tr>
@@ -277,10 +285,10 @@ const TeachersTable = ({
 
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <TableLoadingSkeleton rows={5} cols={6} />
+                <TableLoadingSkeleton rows={5} cols={7} />
               ) : paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16">
+                  <td colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center gap-2">
                       {searchQuery ? <SearchX size={32} className="text-rose-300" /> : <Inbox size={32} className="text-gray-200" />}
                       <span className="text-sm font-bold text-[#364a63]">
@@ -331,6 +339,12 @@ const TeachersTable = ({
                         <div className="flex items-center gap-2 text-[#526484]">
                           <GraduationCap size={14} className="text-[#8094ae]" />
                           <span className="text-[11px] font-medium">{resolveSchoolName(item.school)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-1">
+                        <div className="flex items-center gap-2 text-[#526484]">
+                          <Phone size={14} className="text-[#8094ae]" />
+                          <span className="text-[11px] font-medium">{item.user_phone || "N/A"}</span>
                         </div>
                       </td>
                       <td className="px-6 py-1">

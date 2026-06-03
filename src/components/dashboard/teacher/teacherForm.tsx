@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   Camera,
+  Phone,
   
 } from "lucide-react";
 import { Form, FormItem, FormMessage } from "@/components/ui/form";
@@ -31,6 +32,7 @@ interface TeacherFormValues {
   email: string;
   first_name: string;
   last_name: string;
+  phone: string;
   qualification: string;
   password?: string;
   school_id: string | number;
@@ -55,6 +57,7 @@ export default function TeacherForm({
       email: "",
       first_name: "",
       last_name: "",
+      phone: "",
       qualification: "",
       password: "",
       school_id: "",
@@ -87,6 +90,7 @@ export default function TeacherForm({
           email: initialData.user_email || initialData.user?.email || "",
           first_name: initialData.user?.first_name || initialData.first_name_display || "",
           last_name: initialData.user?.last_name || initialData.last_name_display || "",
+          phone: initialData.phone ? String(initialData.phone) : "",
           qualification: initialData.qualification || "",
           school_id: currentSchoolId || "",
           password: "",
@@ -97,6 +101,7 @@ export default function TeacherForm({
           email: "",
           first_name: "",
           last_name: "",
+          phone: "",
           qualification: "",
           password: "",
           school_id: currentSchoolId || "",
@@ -132,8 +137,8 @@ export default function TeacherForm({
     formData.append("first_name", values.first_name);
     formData.append("last_name", values.last_name);
     formData.append("qualification", values.qualification);
-    
-    
+    formData.append("phone", values.phone);
+
     if (values.school_id) {
       formData.append("school", String(values.school_id));
     }
@@ -238,8 +243,37 @@ export default function TeacherForm({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormFieldControl form={form} name="email" label="Email Address" icon={<Mail size={12} />} placeholder="email@example.com" disabled={isUpdate} />
-                  <FormFieldControl
+                  <FormFieldControl form={form} name="email" label="Email Address" icon={<Mail size={12} />} placeholder="email@example.com" />
+                  <Controller
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem className="w-full relative">
+                        <ThemedInput
+                          label="Phone Number"
+                          icon={<Phone size={12} />}
+                          placeholder="98XXXXXXXX"
+                          type="text"
+                          disabled={loading}
+                          {...field}
+                          onChange={(e) => {
+                            
+                            const cleanValue = e.target.value.replace(/\D/g, "");
+                            
+                            if (cleanValue.length <= 10) {
+                              field.onChange(cleanValue);
+                            }
+                          }}
+                        />
+                        <FormMessage className="text-[10px]" />
+                      </FormItem>
+                    )}
+                  />
+                 
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <FormFieldControl
                     form={form}
                     name="password"
                     label={isUpdate ? "New Password" : "Password"}
@@ -247,9 +281,6 @@ export default function TeacherForm({
                     placeholder={isUpdate ? "Create new password" : "Create password"}
                     type="password"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
                   <FormFieldControl form={form} name="qualification" label="Qualification" icon={<GraduationCap size={12} />} placeholder="e.g. English Teacher" />
                 </div>
 

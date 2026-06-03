@@ -15,6 +15,7 @@ import {
   Fingerprint,
   Baby,
   User,
+  Phone,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -37,6 +38,7 @@ interface Parent {
   school: any;
   photo?: string | null;      
   photo_url?: string | null;
+  user_phone: string ;
 }
 
 interface ParentTableProps {
@@ -110,11 +112,14 @@ const ParentTable = ({
       const name = `${p.first_name_display} ${p.last_name_display || ""}`.toLowerCase();
       const email = (p.user_email || "").toLowerCase();
       const pid = (p.parent_id || "").toLowerCase();
+      const phone = (p.user_phone || "").toLowerCase();
       const query = searchQuery.toLowerCase();
+
 
       return (
         name.includes(query) ||
         email.includes(query) ||
+        phone.includes(query) ||
         pid.includes(query)
       );
     });
@@ -144,11 +149,12 @@ const ParentTable = ({
       `${item.first_name_display} ${item.last_name_display}`,
       resolveSchoolName(item.school),
       item.user_email || "N/A",
+      item.user_phone || "N/A",
       `${item.children?.length || 0} Kids`,
     ]);
 
     autoTable(doc, {
-      head: [["S.N.", "Parent ID", "Name", "Institution", "Email", "Children"]],
+      head: [["S.N.", "Parent ID", "Name", "Institution", "Email", "Phone", "Children"]],
       body: tableData,
       startY: 28,
       styles: { fontSize: 8 },
@@ -167,6 +173,7 @@ const ParentTable = ({
         <td>${item.first_name_display} ${item.last_name_display}</td>
         <td>${resolveSchoolName(item.school)}</td>
         <td>${item.user_email}</td>
+        <td>${item.user_phone || "N/A"}</td>
         <td>${item.children?.length || 0} Children</td>
       </tr>
     `).join("");
@@ -196,6 +203,7 @@ const ParentTable = ({
                   <th>Name</th>
                   <th>Institution</th>
                   <th>Email</th>
+                  <th>Phone</th>
                   <th>Children</th>
                 </tr>
               </thead>
@@ -264,6 +272,7 @@ const ParentTable = ({
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">S.N.</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Parent Info</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Institution</th>
+                <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Phone</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Details</th>
                 <th className="px-4 py-1 text-[11px] font-bold text-[#8094ae] uppercase text-right w-24">Action</th>
               </tr>
@@ -271,7 +280,7 @@ const ParentTable = ({
 
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <TableLoadingSkeleton rows={5} cols={6} />
+                <TableLoadingSkeleton rows={5} cols={7} />
               ) : paginatedItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-16">
@@ -323,6 +332,12 @@ const ParentTable = ({
                         <div className="flex items-center gap-2 text-[#526484]">
                           <GraduationCap size={14} className="text-[#8094ae]" />
                           <span className="text-[11px] font-medium">{resolveSchoolName(item.school)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-1">
+                        <div className="flex items-center gap-2 text-[#526484]">
+                          <Phone size={10} className="text-[#8094ae]" />
+                          <span className="text-[10px] font-medium">{item.user_phone || "N/A"}</span>
                         </div>
                       </td>
                       <td className="px-6 py-1">

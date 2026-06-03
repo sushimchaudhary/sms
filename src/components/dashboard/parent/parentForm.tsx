@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -13,6 +15,7 @@ import {
   Eye,
   EyeOff,
   Camera,
+  Phone,
 } from "lucide-react";
 import { Form, FormItem, FormMessage } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
@@ -32,6 +35,7 @@ interface ParentFormValues {
   password?: string;
   school_id: string | number;
   photo?:any;
+  phone: string;
 }
 
 export default function ParentForm({
@@ -55,6 +59,7 @@ export default function ParentForm({
       password: "",
       school_id: "",
       photo: null,
+      phone: "",
     },
   });
 
@@ -82,9 +87,11 @@ export default function ParentForm({
           email: initialData.user_email || initialData.user?.email || "",
           first_name: initialData.first_name_display || initialData.user?.first_name || "",
           last_name: initialData.last_name_display || initialData.user?.last_name || "",
+          phone: initialData.user_phone || "",
           school_id: currentSchoolId || "",
           password: "",
           photo: null,
+         
         });
       } else {
         setPhotoPreview(null);
@@ -95,6 +102,7 @@ export default function ParentForm({
           password: "",
           school_id: currentSchoolId || "",
           photo: null,
+          phone: "",
         });
       }
     }
@@ -119,46 +127,43 @@ export default function ParentForm({
   };
 
    const onSubmit = async (values: ParentFormValues) => {
-      setLoading(true);
-      try {
-        // const payload: any = {
-        //   email: values.email,
-        //   first_name: values.first_name,
-        //   last_name: values.last_name,
-          
-        //   school: values.school_id,
-        // };
+    setLoading(true);
+    try {
         const formData = new FormData();
+        
+        // सामान्य टेक्स्ट फिल्डहरू पठाउने
         formData.append("email", values.email);
         formData.append("first_name", values.first_name);
         formData.append("last_name", values.last_name);
-       
-        formData.append("photo", values.photo);
-
+        formData.append("phone", values.phone);
+        
         if (values.school_id) {
-      formData.append("school", String(values.school_id));
-    }
-
-    if (values.photo && values.photo instanceof File) {
-      formData.append("photo", values.photo);
-    }
-  
-        if (values.password && values.password.trim() !== "") {
-          formData.append("password", values.password);
+            formData.append("school", String(values.school_id));
         }
-  
+
+        // 💡 फोटो छ भने मात्र 'photo' key पठाउने
+        // यदि फोटो सेलेक्ट गरिएको छैन भने, यो फिल्ड ब्याकएन्डमा जाँदैन 
+        // र Django ले पुरानो फोटो यथावत राख्छ (अथवा null राख्छ)
+        if (values.photo && values.photo instanceof File) {
+            formData.append("photo", values.photo);
+        }
+
+        if (values.password && values.password.trim() !== "") {
+            formData.append("password", values.password);
+        }
+
         if (isUpdate) {
-          const teacherId = initialData.id || initialData._id;
-          await ParentServices.updateParent(teacherId, formData);
-          toast.success("Parent updated successfully");
+            const parentId = initialData.id || initialData._id;
+            await ParentServices.updateParent(parentId, formData);
+            toast.success("Parent updated successfully");
         } else {
-          if (!values.password) {
-            toast.error("Password is required");
-            setLoading(false);
-            return;
-          }
-          await ParentServices.createParent(formData);
-          toast.success("Parent registered successfully");
+            if (!values.password) {
+                toast.error("Password is required");
+                setLoading(false);
+                return;
+            }
+            await ParentServices.createParent(formData);
+            toast.success("Parent registered successfully");
         }
         onSuccess();
         handleClose();
@@ -283,8 +288,36 @@ export default function ParentForm({
                     label="Email Address"
                     icon={<Mail size={12} />}
                     placeholder="parent@example.com"
-                    disabled={isUpdate}
+                    
                   />
+
+                   <Controller
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem className="w-full relative">
+                        <ThemedInput
+                          label="Phone Number"
+                          icon={<Phone size={12} />}
+                          placeholder="98XXXXXXXX"
+                          type="text"
+                          disabled={loading}
+                          {...field}
+                          onChange={(e) => {
+                            
+                            const cleanValue = e.target.value.replace(/\D/g, "");
+                            
+                            if (cleanValue.length <= 10) {
+                              field.onChange(cleanValue);
+                            }
+                          }}
+                        />
+                        <FormMessage className="text-[10px]" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="col-span-1 md:col-span-2">
                   <FormFieldControl
                     form={form}
                     name="password"
@@ -295,6 +328,7 @@ export default function ParentForm({
                     }
                     type="password"
                   />
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">

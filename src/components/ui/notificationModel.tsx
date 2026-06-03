@@ -2,9 +2,28 @@
 
 import React, { useState, useEffect } from "react";
 import { Bell, X, UserCircle, CalendarDays, Tag, Radio } from "lucide-react";
+import NepaliDate from "nepali-date-converter";
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    // मितिलाई सही ढाँचामा बदल्ने
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
 
 const NotificationDetailModal = ({ notification, onClose }: any) => {
   const [isClosing, setIsClosing] = useState(false);
+   const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
+
 
   // Close handler with delay for fade-out animation
   const handleClose = () => {
@@ -68,11 +87,7 @@ const NotificationDetailModal = ({ notification, onClose }: any) => {
           <div className="flex items-center gap-1.5">
             <CalendarDays size={11} className="text-[#8094ae]" />
             <span className="text-[10px] text-[#526484]">
-              {new Date(notification.created_at).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+               {formatToNepaliBS(notification.created_at)}
             </span>
           </div>
           <div className="flex items-center gap-1.5">

@@ -24,11 +24,29 @@ import dayjs from "dayjs";
 import useAuth from "@/lib/hooks/useAuth";
 import { LeaveServices } from "@/services/leaveServices";
 import { EnrollmentServices } from "@/services/studentEnrollment";
+import CalendarPicker from "@/components/ui/Calendar";
+import NepaliDate from "nepali-date-converter";
+
+
+const adToBSValue = (adStr: string): string => {
+  if (!adStr) return "";
+  try {
+    const nd = new NepaliDate(new Date(adStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+
 
 interface LeaveFormValues {
   leave_type: string;
-  start_date: dayjs.Dayjs | null;
-  end_date: dayjs.Dayjs | null;
+  start_date: string | null;
+  end_date: string | null;
   reason: string;
   is_half_day: boolean;
   status?: string;
@@ -68,13 +86,18 @@ export default function LeaveForm({
   const isManagement = isSuperAdmin || isAdmin;
 
   // Logic: Field Disable गर्ने कि नगर्ने?
-  const isOwner = initialData?.user?.id === loggedInUser?._id || initialData?.student === loggedInUser?._id;
+  const isOwner =
+    initialData?.user?.id === loggedInUser?._id ||
+    initialData?.student === loggedInUser?._id;
   const canEditFields = !isUpdate || isOwner;
 
   // Logic: Status फेर्न पाउने कि नपाउने?
   // यदि Admin ले create गरेको हो भने superadmin ले मात्र status change गर्न पाउने
-  const createdByAdmin = initialData?.user?.role === "admin" || initialData?.created_by_role === "admin";
-  const canUpdateStatus = isUpdate && isManagement && (!createdByAdmin || isSuperAdmin);
+  const createdByAdmin =
+    initialData?.user?.role === "admin" ||
+    initialData?.created_by_role === "admin";
+  const canUpdateStatus =
+    isUpdate && isManagement && (!createdByAdmin || isSuperAdmin);
 
   const form = useForm<LeaveFormValues>({
     defaultValues: {
@@ -101,15 +124,31 @@ export default function LeaveForm({
       if (initialData) {
         form.reset({
           ...initialData,
-          start_date: initialData.start_date ? dayjs(initialData.start_date) : null,
-          end_date: initialData.end_date ? dayjs(initialData.end_date) : null,
+          start_date: initialData.start_date
+            ? adToBSValue(initialData.start_date)
+            : null,
+          end_date: initialData.end_date ? adToBSValue(initialData.end_date) : null,
           status: initialData.status || "pending",
         });
         if (initialData.attachment) {
-          setFileList([{ uid: "-1", name: "Current Attachment", status: "done", url: initialData.attachment }]);
+          setFileList([
+            {
+              uid: "-1",
+              name: "Current Attachment",
+              status: "done",
+              url: initialData.attachment,
+            },
+          ]);
         }
       } else {
-        form.reset({ leave_type: "sick", is_half_day: false, reason: "", start_date: null, end_date: null, status: "pending" });
+        form.reset({
+          leave_type: "sick",
+          is_half_day: false,
+          reason: "",
+          start_date: null,
+          end_date: null,
+          status: "pending",
+        });
         setFileList([]);
       }
     }
@@ -118,10 +157,10 @@ export default function LeaveForm({
   const onSubmit = async (values: LeaveFormValues) => {
     setLoading(true);
     const formData = new FormData();
-    
+
     if (fileList.length > 0 && fileList[0].originFileObj) {
-    formData.append("attachment", fileList[0].originFileObj);
-  }
+      formData.append("attachment", fileList[0].originFileObj);
+    }
     // Backend मा status पठाउने
     formData.append("status", values.status || "pending");
 
@@ -130,9 +169,13 @@ export default function LeaveForm({
       formData.append("leave_type", values.leave_type);
       formData.append("reason", values.reason);
       formData.append("is_half_day", String(values.is_half_day));
-      if (values.start_date) formData.append("start_date", values.start_date.format("YYYY-MM-DD"));
-      const finalEndDate = values.is_half_day ? values.start_date : values.end_date;
-      if (finalEndDate) formData.append("end_date", finalEndDate.format("YYYY-MM-DD"));
+      if (values.start_date)
+        formData.append("start_date", values.start_date);
+      const finalEndDate = values.is_half_day
+        ? values.start_date
+        : values.end_date;
+      if (finalEndDate)
+        formData.append("end_date", finalEndDate);
     }
 
     try {
@@ -146,15 +189,17 @@ export default function LeaveForm({
       onSuccess();
       onClose();
     } catch (err: any) {
-          const serverErrors = err.response?.data;
-          if (serverErrors) {
-            Object.keys(serverErrors).forEach((key) => {
-              const message = Array.isArray(serverErrors[key]) ? serverErrors[key][0] : serverErrors[key];
-              toast.error(`${key}: ${message}`);
-            });
-          } else {
-            toast.error("Something went wrong. Please try again.");
-          }
+      const serverErrors = err.response?.data;
+      if (serverErrors) {
+        Object.keys(serverErrors).forEach((key) => {
+          const message = Array.isArray(serverErrors[key])
+            ? serverErrors[key][0]
+            : serverErrors[key];
+          toast.error(`${key}: ${message}`);
+        });
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -168,39 +213,66 @@ export default function LeaveForm({
 
   return (
     <>
-      <div onClick={handleClose} className={`fixed inset-0 z-[100] h-screen bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} />
+      <div
+        onClick={handleClose}
+        className={`fixed inset-0 z-[100] h-screen bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
+      />
 
-      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
+      <div
+        className={`fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
+      >
         <div className="w-full max-w-xl bg-white rounded shadow-md border border-gray-200 flex flex-col max-h-[95vh] overflow-hidden font-mukta">
-          <ConfigProvider theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}>
-            
+          <ConfigProvider
+            theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}
+          >
             <div className="bg-white px-4 py-2 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                 <ClipboardList size={15} style={{ color: primaryColor }} />
-                {isUpdate ? (canEditFields ? "Edit Leave Request" : "Manage Leave Status") : "New Leave Application"}
+                {isUpdate
+                  ? canEditFields
+                    ? "Edit Leave Request"
+                    : "Manage Leave Status"
+                  : "New Leave Application"}
               </h2>
-              <button onClick={handleClose} className="text-red-500 hover:rotate-90 transition-transform p-1">
+              <button
+                onClick={handleClose}
+                className="text-red-500 hover:rotate-90 transition-transform p-1"
+              >
                 <X size={20} />
               </button>
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="px-4 sm:px-6 py-4 space-y-2 overflow-y-auto flex-1">
-               {/* Status Section for Management */}
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="px-4 sm:px-6 py-4 space-y-2 overflow-y-auto flex-1"
+              >
+                {/* Status Section for Management */}
                 {isManagement && isUpdate && (
-                  <div 
-                    className="p-2 rounded-md space-y-1 border" 
-                    style={{ 
-                      backgroundColor: canUpdateStatus ? `${primaryColor}15` : '#f9fafb',
-                      borderColor: canUpdateStatus ? `${primaryColor}30` : '#f3f4f6'
+                  <div
+                    className="p-2 rounded-md space-y-1 border"
+                    style={{
+                      backgroundColor: canUpdateStatus
+                        ? `${primaryColor}15`
+                        : "#f9fafb",
+                      borderColor: canUpdateStatus
+                        ? `${primaryColor}30`
+                        : "#f3f4f6",
                     }}
                   >
-                    <label 
+                    <label
                       className="text-[11px] font-bold flex justify-between items-center uppercase tracking-wider"
-                      style={{ color: canUpdateStatus ? primaryColor : '#9ca3af' }}
+                      style={{
+                        color: canUpdateStatus ? primaryColor : "#9ca3af",
+                      }}
                     >
                       <span className="flex items-center gap-2">
-                        <CheckCircle2 size={14} style={{ color: canUpdateStatus ? primaryColor : '#9ca3af' }} /> 
+                        <CheckCircle2
+                          size={14}
+                          style={{
+                            color: canUpdateStatus ? primaryColor : "#9ca3af",
+                          }}
+                        />
                         Review Status
                       </span>
                       {!canUpdateStatus && (
@@ -209,20 +281,20 @@ export default function LeaveForm({
                         </span>
                       )}
                     </label>
-                    
+
                     <Controller
                       name="status"
                       control={form.control}
                       render={({ field }) => (
-                        <Select 
-                          {...field} 
-                          disabled={!canUpdateStatus} 
-                          className="w-full h-[35px]" 
-                          options={STATUS_OPTIONS} 
+                        <Select
+                          {...field}
+                          disabled={!canUpdateStatus}
+                          className="w-full h-[35px]"
+                          options={STATUS_OPTIONS}
                         />
                       )}
                     />
-                  </div> 
+                  </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -234,7 +306,12 @@ export default function LeaveForm({
                       name="leave_type"
                       control={form.control}
                       render={({ field }) => (
-                        <Select {...field} disabled={!canEditFields} className="w-full h-[33px]" options={LEAVE_TYPES} />
+                        <Select
+                          {...field}
+                          disabled={!canEditFields}
+                          className="w-full h-[33px]"
+                          options={LEAVE_TYPES}
+                        />
                       )}
                     />
                   </FormItem>
@@ -244,8 +321,14 @@ export default function LeaveForm({
                       name="is_half_day"
                       control={form.control}
                       render={({ field: { value, onChange } }) => (
-                        <Checkbox checked={value} onChange={(e) => onChange(e.target.checked)} disabled={!canEditFields}>
-                          <span className="text-[12px] font-bold text-gray-700 uppercase italic">Half Day</span>
+                        <Checkbox
+                          checked={value}
+                          onChange={(e) => onChange(e.target.checked)}
+                          disabled={!canEditFields}
+                        >
+                          <span className="text-[12px] font-bold text-gray-700 uppercase italic">
+                            Half Day
+                          </span>
                         </Checkbox>
                       )}
                     />
@@ -261,19 +344,11 @@ export default function LeaveForm({
                       name="start_date"
                       control={form.control}
                       render={({ field }) => (
-                        <DatePicker
-                                                  {...field}
-                                                  disabled={!canEditFields}
-                                                  placeholder="YYYY-MM-DD"
-                                                  className="w-full h-[33px]"
-                                                  format="YYYY-MM-DD"
-                                                  allowClear
-                                                  panelRender={(panelNode) => (
-                                                    <div style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133.33%", marginBottom: "-80px", marginRight: "-65px" }}>
-                                                      {panelNode}
-                                                    </div>
-                                                  )}
-                                                />
+                         <CalendarPicker   
+                                // value={field.value ? adToBSValue(field.value) : new NepaliDate().format("YYYY-MM-DD")}  
+                                value={field.value || ""}
+                            onChange={(date) => field.onChange(date)}
+                            />
                       )}
                     />
                   </FormItem>
@@ -285,19 +360,12 @@ export default function LeaveForm({
                       name="end_date"
                       control={form.control}
                       render={({ field }) => (
-                        <DatePicker
-                          {...field}
-                          disabled={!canEditFields || isHalfDay} 
-                          placeholder="YYYY-MM-DD"
-                          className="w-full h-[33px]"
-                          format="YYYY-MM-DD"
-                          allowClear
-                          panelRender={(panelNode) => (
-                            <div style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133.33%", marginBottom: "-80px", marginRight: "-65px" }}>
-                              {panelNode}
-                            </div>
-                          )}
-                        />
+                       <CalendarPicker  
+                         value={field.value || ""} 
+                            // value={field.value ? adToBSValue(field.value) : new NepaliDate().format("YYYY-MM-DD")}  
+
+                            onChange={(date) => field.onChange(date)}
+                            />
                       )}
                     />
                   </FormItem>
@@ -311,11 +379,11 @@ export default function LeaveForm({
                     name="reason"
                     control={form.control}
                     render={({ field }) => (
-                      <textarea 
-                        {...field} 
+                      <textarea
+                        {...field}
                         disabled={!canEditFields}
-                        className="w-full p-2 border border-gray-200 rounded text-[12px] min-h-[70px] focus:border-blue-400 outline-none disabled:bg-gray-50" 
-                        placeholder="Reason for leave..." 
+                        className="w-full p-2 border border-gray-200 rounded text-[12px] min-h-[70px] focus:border-blue-400 outline-none disabled:bg-gray-50"
+                        placeholder="Reason for leave..."
                       />
                     )}
                   />
@@ -325,13 +393,28 @@ export default function LeaveForm({
                   <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
                     <UploadCloud size={12} /> Attachment
                   </label>
-                  <div className={`flex items-center gap-3 p-2 border border-dashed rounded ${canEditFields ? 'bg-gray-50/50 border-gray-200' : 'bg-gray-100 border-gray-200'}`}>
-                    <Upload beforeUpload={() => false} maxCount={1} fileList={fileList} onChange={({ fileList }) => setFileList(fileList)} showUploadList={false} disabled={!canEditFields}>
-                      <button type="button" disabled={!canEditFields} className="px-3 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold hover:bg-gray-50 uppercase disabled:opacity-50">
+                  <div
+                    className={`flex items-center gap-3 p-2 border border-dashed rounded ${canEditFields ? "bg-gray-50/50 border-gray-200" : "bg-gray-100 border-gray-200"}`}
+                  >
+                    <Upload
+                      beforeUpload={() => false}
+                      maxCount={1}
+                      fileList={fileList}
+                      onChange={({ fileList }) => setFileList(fileList)}
+                      showUploadList={false}
+                      disabled={!canEditFields}
+                    >
+                      <button
+                        type="button"
+                        disabled={!canEditFields}
+                        className="px-3 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold hover:bg-gray-50 uppercase disabled:opacity-50"
+                      >
                         Choose File
                       </button>
                     </Upload>
-                    <span className="text-[11px] text-gray-500 truncate flex-1">{fileList.length > 0 ? fileList[0].name : "Attachment"}</span>
+                    <span className="text-[11px] text-gray-500 truncate flex-1">
+                      {fileList.length > 0 ? fileList[0].name : "Attachment"}
+                    </span>
                   </div>
                 </div>
 
@@ -339,8 +422,14 @@ export default function LeaveForm({
                   <CancelButton onClick={handleClose} disabled={loading} />
                   <ThemedButton type="submit" size="sm" disabled={loading}>
                     <div className="flex items-center justify-center gap-2">
-                      {loading ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                      <span>{isUpdate ? "Save Changes" : "Submit Application"}</span>
+                      {loading ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Save size={12} />
+                      )}
+                      <span>
+                        {isUpdate ? "Save Changes" : "Submit Application"}
+                      </span>
                     </div>
                   </ThemedButton>
                 </div>

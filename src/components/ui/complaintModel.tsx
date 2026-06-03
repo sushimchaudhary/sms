@@ -14,6 +14,23 @@ import {
   BadgeCheck, 
   UserCheck 
 } from "lucide-react";
+import NepaliDate from "nepali-date-converter";
+import { ThemedButton } from "@/components/ui/themedButton";
+import { CancelButton } from "@/components/ui/CancleButton";
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    // मितिलाई सही ढाँचामा बदल्ने
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
 
 // Status configuration for colors and icons
 const STATUS_CONFIG: any = {
@@ -49,6 +66,10 @@ const STATUS_CONFIG: any = {
 
 const ComplaintDetailModal = ({ complaint, onClose }: any) => {
   const [isClosing, setIsClosing] = useState(false);
+   const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
+
 
   const handleClose = () => {
     setIsClosing(true);
@@ -119,9 +140,7 @@ const ComplaintDetailModal = ({ complaint, onClose }: any) => {
             <div className="flex flex-col">
                 <span className="text-[9px] text-[#8094ae] uppercase font-bold leading-none mb-0.5">Created At</span>
                 <span className="text-[10px] text-[#526484] font-medium">
-                {new Date(complaint.created_at).toLocaleDateString("en-US", {
-                    year: "numeric", month: "short", day: "numeric",
-                })}
+                {formatToNepaliBS(complaint.created_at)}
                 </span>
             </div>
           </div>
@@ -188,25 +207,23 @@ const ComplaintDetailModal = ({ complaint, onClose }: any) => {
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-5 pb-5 pt-2">
-          <button
-            className="px-5 py-2 rounded text-[#364a63] border border-gray-200 text-[11px] font-bold uppercase tracking-tight
-              hover:bg-gray-50 transition-all duration-200 active:scale-95"
+          <CancelButton
+            
             onClick={handleClose}
           >
-            Close
-          </button>
+           
+          </CancelButton>
           
           {complaint.status === 'pending' && (
-             <button
-                className="px-5 py-2 rounded bg-[#364a63] text-white text-[11px] font-bold uppercase tracking-tight
-                hover:bg-[#2c3e52] shadow-lg shadow-[#364a63]/20 transition-all duration-200 active:scale-95"
+             <ThemedButton
+
                 onClick={() => {
                     // Logic to open edit/response mode
                     handleClose();
                 }}
              >
                Take Action
-             </button>
+             </ThemedButton>
           )}
         </div>
       </div>

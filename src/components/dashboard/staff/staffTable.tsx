@@ -15,6 +15,7 @@ import {
   Briefcase,
   Fingerprint,
   User,
+  Phone,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -40,6 +41,7 @@ interface Staff {
   designation: string;
   code: string;photo?: string | null;      
   photo_url?: string | null;
+  user_phone?: string;
 }
 
 interface StaffTableProps {
@@ -114,12 +116,15 @@ const StaffTable = ({
       const email = (s.user?.email || s.user_email || "").toLowerCase();
       const code = (s.code || "").toLowerCase();
       const designation = (s.designation || "").toLowerCase();
+      const phone = (s.user_phone || "").toLowerCase();
       const query = searchQuery.toLowerCase();
+
 
       return (
         name.includes(query) ||
         email.includes(query) ||
         code.includes(query) ||
+        phone.includes(query) ||
         designation.includes(query)
       );
     });
@@ -150,10 +155,11 @@ const StaffTable = ({
       item.designation || "N/A",
       resolveSchoolName(item.school),
       item.user?.email || item.user_email || "N/A",
+      item.user_phone || "N/A",
     ]);
 
     autoTable(doc, {
-      head: [["S.N.", "Staff ID", "Name", "Designation", "Institution", "Email"]],
+      head: [["S.N.", "Staff ID", "Name", "Designation", "Institution", "Email", "Phone"]],
       body: tableData,
       startY: 28,
       styles: { fontSize: 8 },
@@ -173,6 +179,7 @@ const StaffTable = ({
         <td>${item.designation}</td>
         <td>${resolveSchoolName(item.school)}</td>
         <td>${item.user?.email || item.user_email}</td>
+        <td>${item.user_phone}</td>
       </tr>
     `).join("");
 
@@ -202,6 +209,7 @@ const StaffTable = ({
                   <th>Designation</th>
                   <th>Institution</th>
                   <th>Email</th>
+                  <th>Phone</th>
                 </tr>
               </thead>
               <tbody>${printContent}</tbody>
@@ -269,6 +277,7 @@ const StaffTable = ({
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">S.N.</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Staff Info</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Institution</th>
+                <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Phone</th>
                 <th className="px-6 py-1 text-[11px] font-bold text-[#8094ae] uppercase">Details</th>
                 <th className="px-4 py-1 text-[11px] font-bold text-[#8094ae] uppercase text-right w-24">Action</th>
               </tr>
@@ -276,10 +285,10 @@ const StaffTable = ({
 
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <TableLoadingSkeleton rows={5} cols={6} />
+                <TableLoadingSkeleton rows={5} cols={7} />
               ) : paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16">
+                  <td colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center gap-2">
                       {searchQuery ? <SearchX size={32} className="text-rose-300" /> : <Inbox size={32} className="text-gray-200" />}
                       <span className="text-sm font-bold text-[#364a63]">
@@ -331,6 +340,14 @@ const StaffTable = ({
                           <span className="text-[11px] font-medium">{resolveSchoolName(item.school)}</span>
                         </div>
                       </td>
+
+                      <td className="px-6 py-1">
+                        <div className="flex items-center gap-2 text-[#526484]">
+                          <Phone size={10} className="text-[#8094ae]" />
+                          <span className="text-[10px]">{item.user_phone || "N/A"}</span>
+                        </div>
+                      </td>
+                      
                       <td className="px-6 py-1">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
@@ -343,6 +360,7 @@ const StaffTable = ({
                           </div>
                         </div>
                       </td>
+                      
                       <td className="px-4 py-1 text-right">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => onEdit(item)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded active:scale-90 transition-all"><Pencil size={12} /></button>

@@ -35,23 +35,20 @@ export const NotificationServices = {
   },
 
 
-  getUnreadCount: async () => {
+getUnreadCount: async () => {
   try {
-    const res = await axiosInstance.get("/notification-complain/notifications/", {
-      params: { 
-        is_read: false, 
-        limit: 1     
-      }
-    });
-
- 
-    console.log("Full API Response:", res.data);
-
-   
-    return res.data; 
+    const res = await axiosInstance.get("/notification-complain/notifications/");
+    
+    // API ले सबै डेटा दिइरहेको छ भने, हामी आफैं filter गर्नेछौं
+    const allNotifications = Array.isArray(res.data) ? res.data : (res.data.results || []);
+    const unreadNotifications = allNotifications.filter((n: any) => n.is_read === false);
+    
+    console.log("वास्तविक नपढेका नोटिफिकेसनहरू:", unreadNotifications.length);
+    
+    return unreadNotifications.length; 
   } catch (error) {
     console.error("Error fetching unread count:", error);
-    throw error;
+    return 0;
   }
 },
 
@@ -72,6 +69,24 @@ export const NotificationServices = {
     notificationCache = null;
     return res.data;
   },
+
+  // NotificationServices मा यो थप्नुहोस्:
+
+  markNotificationAsRead: async (id: string | number) => {
+    try {
+      // तपाईंले views.py मा बनाएको @action को URL यहाँ राख्नुहोस्
+      const res = await axiosInstance.post(`/notification-complain/notifications/${id}/mark_as_read/`);
+      
+      // क्यास क्लियर गर्नुहोस् ताकि अर्को पटक फेरि डेटा तान्दा अपडेटेड डेटा आउँछ
+      notificationCache = null; 
+      
+      return res.data;
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      throw error;
+    }
+  },
+  
 };
 
 /**

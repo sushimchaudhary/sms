@@ -7,7 +7,7 @@ import { Form, FormItem } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { toast } from "sonner";
-import { ConfigProvider, Select, InputNumber, DatePicker } from "antd";
+import { ConfigProvider, Select, InputNumber } from "antd";
 import { CancelButton } from "@/components/ui/CancleButton";
 import dayjs from "dayjs";
 
@@ -16,12 +16,51 @@ import { FeeServices } from "@/services/feeServices";
 import { EnrollmentServices } from "@/services/studentEnrollment";
 import useAuth from "@/lib/hooks/useAuth";
 
+import NepaliDate from "nepali-date-converter";
+
+// ─── install: npm install nepali-datepicker-reactjs ───
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import "nepali-datepicker-reactjs/dist/index.css";
+import CalendarPicker from "@/components/ui/Calendar";
+
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" */
+const adToBSValue = (adStr: any): string => {
+  if (!adStr) return "";
+  const cleanAdStr = dayjs.isDayjs(adStr) ? adStr.format("YYYY-MM-DD") : String(adStr);
+  
+  try {
+    const nd = new NepaliDate(new Date(cleanAdStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+/** BS "YYYY-MM-DD" → AD "YYYY-MM-DD" */
+const bsToADValue = (bsStr: string): string => {
+  if (!bsStr) return "";
+  try {
+    const [y, m, d] = bsStr.split("-").map(Number);
+    const nd = new NepaliDate(y, m - 1, d);
+    const ad = nd.toJsDate();
+    const ay = ad.getFullYear();
+    const am = String(ad.getMonth() + 1).padStart(2, "0");
+    const adDay = String(ad.getDate()).padStart(2, "0");
+    return `${ay}-${am}-${adDay}`;
+  } catch {
+    return "";
+  }
+};
+
 interface StudentFeeFormValues {
   enrollment: string | number | null;
   fee_type: string | number | null;
   total_amount: number;
   paid_amount: number;
-  due_date: dayjs.Dayjs | null;
+  due_date: string | null;
   status: string;
   school: string;
 }
@@ -52,43 +91,34 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
 
   const { setValue, watch, control, handleSubmit, reset } = form;
 
-  // Watchers
   const watchedEnrollment = watch("enrollment");
   const watchedFeeType = watch("fee_type");
   const watchedTotal = watch("total_amount");
   const watchedPaid = watch("paid_amount");
 
-  // १. Fee Types तान्ने Function (useCallback प्रयोग गरिएको छ)
   const fetchFilteredFeeTypes = useCallback(async (studentEnrollmentId: any) => {
     if (!studentEnrollmentId) return;
-    
-    console.log("🚀 API Call Triggered for ID:", studentEnrollmentId); // Debugging
     setFetchingFees(true);
-    
     try {
       const response = await FeeServices.getAllFeeStructures({ student_id: studentEnrollmentId });
       const results = response.results || response;
-      
       setOptions(prev => ({
         ...prev,
         feeTypes: Array.isArray(results) ? results : [],
       }));
     } catch (err) {
-      console.error("API Error:", err);
       toast.error("शुल्क लोड गर्न सकिएन।");
     } finally {
       setFetchingFees(false);
     }
   }, []);
 
-  // २. विद्यार्थी परिवर्तनको Watcher (यसले गर्दा API Call छुट्दैन) 🔥
   useEffect(() => {
     if (watchedEnrollment && isOpen) {
       fetchFilteredFeeTypes(watchedEnrollment);
     }
   }, [watchedEnrollment, fetchFilteredFeeTypes, isOpen]);
 
-  // ३. सुरुमा Enrollment List तान्ने
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -105,19 +135,18 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
   }, [isOpen]);
 
   const handleModalClose = () => {
-  reset({
-    enrollment: null,
-    fee_type: null,
-    total_amount: 0,
-    paid_amount: 0,
-    due_date: null,
-    status: 'unpaid',
-    school: ""
-  }); // फर्मका भ्यालुहरू रिसेट गर्छ
-  onClose(); // मोडल बन्द गर्छ
-};
+    reset({
+      enrollment: null,
+      fee_type: null,
+      total_amount: 0,
+      paid_amount: 0,
+      due_date: null,
+      status: 'unpaid',
+      school: ""
+    });
+    onClose();
+  };
 
-  // ४. Edit Mode logic
   useEffect(() => {
     if (isOpen && initialData) {
       const enrollmentId = initialData?.enrollment?.id || initialData?.enrollment || null;
@@ -127,14 +156,13 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
         fee_type: initialData?.fee_type?.id || initialData?.fee_type || null,
         total_amount: Number(initialData?.total_amount) || 0,
         paid_amount: Number(initialData?.paid_amount) || 0,
-        due_date: initialData?.due_date ? dayjs(initialData.due_date) : null,
+        due_date: initialData?.due_date ? dayjs(initialData.due_date).format("YYYY-MM-DD") : null,
         status: initialData?.status || 'unpaid',
         school: String(loggedInUser?.school_id || ""),
       });
     }
   }, [initialData, isOpen, loggedInUser, reset]);
 
-  // ५. Fee Type सेलेक्ट गर्दा Amount सेट गर्ने
   useEffect(() => {
     if (watchedFeeType && options.feeTypes.length > 0 && !isUpdate) {
       const selected = options.feeTypes.find((f: any) => f.fee_type == watchedFeeType);
@@ -144,7 +172,6 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
     }
   }, [watchedFeeType, options.feeTypes, setValue, isUpdate]);
 
-  // ६. Status Auto-calculation
   useEffect(() => {
     const total = Number(watchedTotal) || 0;
     const paid = Number(watchedPaid) || 0;
@@ -161,9 +188,8 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
       ...values,
       fee_type: Number(values.fee_type),
       enrollment: Number(values.enrollment),
-      due_date: values.due_date ? values.due_date.format("YYYY-MM-DD") : null,
+      due_date: values.due_date || null,
     };
-    console.log("Submitting Payload:", payload);
     try {
       if (isUpdate) {
         await FeeServices.updateStudentFees(initialData.id, payload);
@@ -173,7 +199,7 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
       toast.success(isUpdate ? "Fee record updated" : "Student fee assigned successfully");
       onSuccess(); 
       onClose();
-    } catch (err: any) {
+    } catch {
       toast.error("Error occurred while saving fee");
     } finally { 
       setLoading(false); 
@@ -182,11 +208,42 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
 
   return (
     <>
+      {/* Dynamic Scrollbar CSS Injector (Saves adding global CSS) */}
+      <style>{`
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar {
+          width: 5px !important;
+        }
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar-track {
+          background: #f1f5f9 !important;
+          border-radius: 4px;
+        }
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar-thumb {
+          background: ${primaryColor || '#3b82f6'} !important;
+          border-radius: 4px;
+        }
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar-thumb:hover {
+          opacity: 0.8;
+        }
+      `}</style>
+
       <div onClick={onClose} className={`fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm transition-all duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} />
       
       <div className={`fixed inset-0 z-[101] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
-        <div className="w-full max-w-2xl bg-white rounded shadow-md border border-gray-200 overflow-hidden font-mukta">
-          <ConfigProvider theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}>
+        <div className="w-full max-w-2xl bg-white rounded shadow-md border border-gray-200 overflow-visible font-mukta">
+          <ConfigProvider 
+            theme={{ 
+              token: { 
+                colorPrimary: primaryColor, 
+                borderRadius: 4 
+              },
+              components: {
+                Select: {
+                  // Dropdown भित्रको active items र scrollbar मा primaryColor मिलाउन टोकनहरू
+                  optionSelectedBg: `${primaryColor}10`, // 10% opacity for selected item background
+                }
+              }
+            }}
+          >
             
             <div className="bg-white px-4 py-3 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -215,19 +272,46 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                           {...field} 
                           showSearch 
                           className="w-full h-[35px]" 
-                          placeholder="Select Student"
-                          optionFilterProp="label"
-                          // यहाँ onChange मा पुरानो डाटा Clear गर्ने 🔥
+                          placeholder="Search by name, roll, class or section..."
+                          optionFilterProp="searchValue"
+                          dropdownClassName="custom-slim-scrollbar" // Scrollbar custom class यहाँ जोडिएको छ
+                          filterOption={(input, option) => {
+                            if (!option?.searchValue) return false;
+                            return option.searchValue.toLowerCase().includes(input.toLowerCase());
+                          }}
                           onChange={(value) => {
                             field.onChange(value);
-                            setOptions(prev => ({ ...prev, feeTypes: [] })); // Clear list
+                            setOptions(prev => ({ ...prev, feeTypes: [] }));
                             setValue("fee_type", null);
                             setValue("total_amount", 0);
                           }}
                           options={options.enrollments.map((e: any) => ({ 
                             value: e.id, 
-                            label: `${e.student_name} (R.N: ${e.roll_number || 'N/A'}) - Class: ${e.class_name}` 
-                          }))} 
+                            label: (
+                              <div className="flex items-center justify-between w-full py-0.5 border-b border-gray-50/50 font-sans">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600 border border-blue-100">
+                                    {e.student_name ? e.student_name.charAt(0).toUpperCase() : "S"}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[12px] font-bold text-slate-700 tracking-wide leading-tight">
+                                      {e.student_name}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                      Roll No: <span className="font-semibold text-slate-500">{e.roll_number || "N/A"}</span>
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                  <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full bg-slate-100 text-slate-600 border border-slate-200 shadow-3xs">
+                                    Class: {e.class_name || "N/A"} - {e.section_name?.toUpperCase() || "N/A"}
+                                  </span>
+                                </div>
+                              </div>
+                            ),
+                            searchValue: `${e.student_name} ${e.roll_number || ''} ${e.class_name || ''} ${e.section_name || ''}`
+                          })).reverse()}
                         />
                       )} 
                     />
@@ -247,6 +331,7 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                           className="w-full h-[35px]" 
                           placeholder={fetchingFees ? "Loading..." : "Select Fee Type"}
                           optionFilterProp="label" 
+                          dropdownClassName="custom-slim-scrollbar" // यसमा पनि म्याच गराउन स्क्रोलबार थपियो
                           loading={fetchingFees}
                           disabled={fetchingFees}
                           showSearch
@@ -297,13 +382,12 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                       name="due_date" 
                       control={control} 
                       render={({ field }) => (
-                        <DatePicker
-                          {...field}
-                          placeholder="YYYY-MM-DD"
-                          className="w-full h-[33px]"
-                          format="YYYY-MM-DD"
-                          allowClear
-                        />
+                        <div className="w-full relative dynamic-nepali-container [&>.ndp-container]:!z-[9999]">
+                           <CalendarPicker   
+                            value={field.value || ""} 
+                            onChange={(date) => field.onChange(date)}
+                            />
+                        </div>
                       )} 
                     />
                   </FormItem>

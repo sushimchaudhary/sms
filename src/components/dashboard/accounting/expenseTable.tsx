@@ -23,6 +23,7 @@ import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { FeeServices } from "@/services/feeServices";
+import NepaliDate from "nepali-date-converter";
 
 interface Expense {
   id: string | number;
@@ -41,6 +42,20 @@ interface ExpenseTableProps {
   searchQuery?: string;
 }
 
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    // मितिलाई सही ढाँचामा बदल्ने
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
+
 const PAGE_SIZE = 20;
 
 const ExpenseTable = ({
@@ -56,6 +71,9 @@ const ExpenseTable = ({
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | number | null>(null);
+  const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -106,7 +124,7 @@ const ExpenseTable = ({
       item.title,
       item.expense_type,
       `Rs. ${item.amount}`,
-      item.date,
+      formatToNepaliBS(item.date),
     ]);
 
     autoTable(doc, {
@@ -127,7 +145,7 @@ const ExpenseTable = ({
         <td>${item.title}</td>
         <td>${item.expense_type}</td>
         <td>Rs. ${item.amount}</td>
-        <td>${item.date}</td>
+        <td>${formatToNepaliBS(item.date)}</td>
       </tr>
     `).join("");
 
@@ -281,7 +299,7 @@ const ExpenseTable = ({
                       </td>
                       <td className="px-6 py-2">
                         <div className="flex items-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
-                          <CalendarClock size={11} /> {item.date}
+                          <CalendarClock size={11} /> {formatToNepaliBS(item.date)}
                         </div>
                       </td>
                       <td className="px-4 py-2 text-right">

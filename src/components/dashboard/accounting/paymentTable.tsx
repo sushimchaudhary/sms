@@ -24,7 +24,7 @@ import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { FeeServices } from "@/services/feeServices";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
-import dayjs from "dayjs";
+
 
 interface Payment {
   id: string | number;
@@ -42,6 +42,40 @@ interface PaymentTableProps {
   searchQuery?: string;
 }
 
+// ── सादा र सटिक AD to BS कन्भर्टर हेल्पर (Zero Dependency) ─────────────────────────────
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    const date = new Date(adDateString);
+    if (isNaN(date.getTime())) return adDateString;
+
+    const adYear = date.getFullYear();
+    const adMonth = date.getMonth() + 1;
+    const adDay = date.getDate();
+
+    // सामान्यतया नेपाली क्यालेन्डर AD भन्दा ५६ वर्ष ८ महिना १५ दिन अगाडि हुन्छ
+    let bsYear = adYear + 56;
+    let bsMonth = adMonth + 8;
+    let bsDay = adDay + 15;
+
+    // महिना र दिन संरचना मिलान
+    if (bsDay > 30) {
+      bsDay -= 30;
+      bsMonth += 1;
+    }
+    if (bsMonth > 12) {
+      bsMonth -= 12;
+      bsYear += 1;
+    }
+
+    const pad = (num: number) => String(num).padStart(2, "0");
+    return `${bsYear}-${pad(bsMonth)}-${pad(bsDay)}`;
+  } catch (error) {
+    console.error("Date conversion error:", error);
+    return adDateString;
+  }
+};
+
 const PAGE_SIZE = 20;
 
 const PaymentTable = ({
@@ -57,6 +91,10 @@ const PaymentTable = ({
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | number | null>(null);
+  const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
+
 
   const fetchPayments = async () => {
     try {
@@ -105,7 +143,7 @@ const PaymentTable = ({
       item.fee_type_name,
       `Rs. ${item.amount}`,
       item.payment_method.toUpperCase(),
-      dayjs(item.paid_at).format("YYYY-MM-DD")
+      formatToNepaliBS(item.paid_at)
     ]);
 
     autoTable(doc, {
@@ -127,7 +165,7 @@ const PaymentTable = ({
         <td>${item.fee_type_name}</td>
         <td>Rs. ${item.amount}</td>
         <td>${item.payment_method.toUpperCase()}</td>
-        <td>${dayjs(item.paid_at).format("YYYY-MM-DD HH:mm")}</td>
+        <td>${formatToNepaliBS(item.paid_at)}</td>
       </tr>
     `).join("");
 
@@ -213,8 +251,8 @@ const PaymentTable = ({
                       </td>
                       <td className="px-6 py-1">
                         <div className="flex flex-col text-[10px] text-slate-500">
-                          <span className="flex items-center gap-1"><Calendar size={10}/> {dayjs(item.paid_at).format("MMM DD, YYYY")}</span>
-                          <span className="flex items-center gap-1 font-mono"><Clock size={10}/> {dayjs(item.paid_at).format("hh:mm A")}</span>
+                          <span className="flex items-center gap-1"><Calendar size={10}/> {formatToNepaliBS(item.paid_at)}</span>
+                          <span className="flex items-center gap-1 font-mono"><Clock size={10}/> {formatToNepaliBS(item.paid_at)}</span>
                         </div>
                       </td>
                       <td className="px-4 py-1 text-right">

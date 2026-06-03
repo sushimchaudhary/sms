@@ -13,7 +13,6 @@ import {
   Type,
   AlignLeft,
   GraduationCap,
-  Paperclip,
   UploadCloud,
   FileText,
 } from "lucide-react";
@@ -22,7 +21,7 @@ import { ThemedButton } from "@/components/ui/themedButton";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { toast } from "sonner";
-import { ConfigProvider, Select, DatePicker, Upload } from "antd";
+import { ConfigProvider, Select, Upload } from "antd";
 import { CancelButton } from "@/components/ui/CancleButton";
 import dayjs from "dayjs";
 import useAuth from "@/lib/hooks/useAuth";
@@ -31,6 +30,43 @@ import { ClassServices } from "@/services/classServices";
 import { SubjectServices } from "@/services/subjectServices";
 import { SectionServices } from "@/services/sectionServices";
 import { SessionServices } from "@/services/sessionsServices";
+
+import NepaliDate from "nepali-date-converter";
+// ─── install: npm install nepali-datepicker-reactjs ───
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import "nepali-datepicker-reactjs/dist/index.css";
+
+// ── Helpers ──────────────────────────────────────────────
+
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" (for the picker value) */
+const adToBSValue = (adStr: string): string => {
+  if (!adStr) return "";
+  try {
+    const nd = new NepaliDate(new Date(adStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+/** BS "YYYY-MM-DD" → AD "YYYY-MM-DD" (to save in form state) */
+const bsToADValue = (bsStr: string): string => {
+  if (!bsStr) return "";
+  try {
+    const [y, m, d] = bsStr.split("-").map(Number);
+    const nd = new NepaliDate(y, m - 1, d);
+    const ad = nd.toJsDate();
+    const ay = ad.getFullYear();
+    const am = String(ad.getMonth() + 1).padStart(2, "0");
+    const adDay = String(ad.getDate()).padStart(2, "0");
+    return `${ay}-${am}-${adDay}`;
+  } catch {
+    return "";
+  }
+};
 
 interface HomeworkFormValues {
   school: string | number | null;
@@ -41,7 +77,7 @@ interface HomeworkFormValues {
   teacher: string | number | null;
   title: string;
   description: string;
-  due_date: dayjs.Dayjs | null;
+  due_date: dayjs.Dayjs | string | null;
 }
 
 export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }: any) {
@@ -122,7 +158,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
           teacher: initialData.teacher?.id || initialData.teacher || null,
           title: initialData.title || "",
           description: initialData.description || "",
-          due_date: initialData.due_date ? dayjs(initialData.due_date) : null,
+          due_date: initialData.due_date ? dayjs(initialData.due_date).format("YYYY-MM-DD") : null,
         });
 
         if (initialData.file) {
@@ -170,14 +206,12 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
       formData.append("due_date", dayjs(values.due_date).format("YYYY-MM-DD"));
     }
 
-    // Only append file if a new file is selected (has originFileObj)
     if (fileList[0]?.originFileObj) {
       formData.append("file", fileList[0].originFileObj);
     }
 
     try {
       if (isUpdate) {
-        // Using PUT (or PATCH if PUT fails with 400)
         await HomeworkServices.updateHomework(initialData.id, formData);
         toast.success("Homework updated successfully");
       } else {
@@ -203,10 +237,31 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
 
   return (
     <>
+      {/* 1. Force Calendar Popups and 2. Custom Slim Dynamic Scrollbar */}
+      <style>{`
+        .ndp-container {
+          z-index: 99999 !important;
+        }
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar,
+        .form-scroller::-webkit-scrollbar {
+          width: 5px !important;
+        }
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar-track,
+        .form-scroller::-webkit-scrollbar-track {
+          background: #f1f5f9 !important;
+          border-radius: 4px;
+        }
+        .custom-slim-scrollbar .rc-virtual-list-holder::-webkit-scrollbar-thumb,
+        .form-scroller::-webkit-scrollbar-thumb {
+          background: ${primaryColor || '#3b82f6'} !important;
+          border-radius: 4px;
+        }
+      `}</style>
+
       <div onClick={handleClose} className={`fixed inset-0 z-[100] h-screen bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} />
       
       <div className={`fixed inset-0 z-[101] flex items-center justify-center p-2 sm:p-4 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
-        <div className="w-full max-w-2xl bg-white rounded shadow-md border border-gray-200 flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden font-mukta">
+        <div className="w-full max-w-2xl bg-white rounded shadow-md border border-gray-200 flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-visible font-mukta">
           <ConfigProvider theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}>
             
             <div className="bg-white px-4 py-3 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
@@ -218,12 +273,13 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="px-4 sm:px-6 py-3 space-y-2 overflow-y-auto flex-1">
+              {/* Added form-scroller for slim scrollbars and overflow-y-visible to prevent clipping */}
+              <form onSubmit={form.handleSubmit(onSubmit)} className="px-4 sm:px-6 py-3 space-y-4 overflow-y-visible form-scroller flex-1">
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <FormFieldControl form={form} name="class_assigned" label="Class" type="select" icon={<Layers size={12} />} placeholder="Select Class" options={classes} />
-                  <FormFieldControl form={form} name="section" label="Section" type="select" icon={<Users size={12} />} placeholder="Select Section" options={sections} />
-                  <FormFieldControl form={form} name="subject" label="Subject" type="select" icon={<GraduationCap size={12} />} placeholder="Select Subject" options={subjects} />
+                  <FormFieldControl form={form} name="class_assigned" label="Class" type="select" icon={<Layers size={12} />} placeholder="Select Class" options={classes} primaryColor={primaryColor} />
+                  <FormFieldControl form={form} name="section" label="Section" type="select" icon={<Users size={12} />} placeholder="Select Section" options={sections} primaryColor={primaryColor} />
+                  <FormFieldControl form={form} name="subject" label="Subject" type="select" icon={<GraduationCap size={12} />} placeholder="Select Subject" options={subjects} primaryColor={primaryColor} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -231,32 +287,31 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
                   
                   <FormItem className="w-full">
                     <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
-                      <Calendar size={12} /> Due Date
+                      <Calendar size={12} style={{ color: primaryColor }} /> Due Date
                     </label>
-                    <Controller
-                      name="due_date"
-                      control={form.control}
+                    <Controller 
+                      name="due_date" 
+                      control={form.control} 
                       render={({ field }) => (
-                        <DatePicker
-                          {...field}
-                          placeholder="YYYY-MM-DD"
-                          className="w-full h-[33px]"
-                          format="YYYY-MM-DD"
-                          allowClear
-                          panelRender={(panelNode) => (
-                            <div style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133.33%", marginBottom: "-80px", marginRight: "-65px" }}>
-                              {panelNode}
-                            </div>
-                          )}
-                        />
-                      )}
+                        <div className="w-full relative">
+                          <NepaliDatePicker
+                            inputClassName="w-full h-[33px] px-3 py-1.5 text-sm text-gray-800 bg-white border border-gray-300 rounded shadow-xs focus:border-blue-500 focus:outline-hidden transition-all placeholder:text-gray-400 font-sans"
+                            value={adToBSValue(field.value ? dayjs(field.value).format("YYYY-MM-DD") : "")}
+                            onChange={(bsVal: string) => field.onChange(bsToADValue(bsVal))}
+                            options={{
+                              calenderLocale: "ne",
+                              valueLocale: "en",
+                            }}
+                          />
+                        </div>
+                      )} 
                     />
                   </FormItem>
                 </div>
 
                 <FormFieldControl form={form} name="description" label="Instructions" type="textarea" icon={<AlignLeft size={12} />} placeholder="Enter instructions" />
 
-                {/* --- IMPROVED FILE UPLOAD SECTION --- */}
+                {/* --- FILE UPLOAD SECTION --- */}
                 <div className="space-y-1">
                   <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
                     <UploadCloud size={12} /> Attachment (PDF/DOC/Image)
@@ -280,11 +335,11 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
                     <div className="flex-1 w-full min-h-[70px] flex items-center">
                       {fileList.length > 0 ? (
                         <div className="w-full flex items-center justify-between p-1 bg-white border border-gray-200 rounded shadow-sm">
-                          <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-50 rounded">
                               <FileText size={15} className="text-blue-500" />
                             </div>
-                            <div className="flex flex-col overflow-hidden">
+                            <div className="flex flex-col">
                               <span className="text-[12px] font-semibold text-gray-700 truncate max-w-[150px] sm:max-w-[250px]">
                                 {fileList[0].name}
                               </span>
@@ -296,7 +351,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
                           <button 
                             type="button"
                             onClick={() => setFileList([])}
-                            className="p-1.5  text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+                            className="p-1.5 text-red-500 hover:text-red-600 transition-colors cursor-pointer"
                           >
                             <X size={16} />
                           </button>
@@ -310,7 +365,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
                   </div>
                 </div>
 
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white z-10">
                   <CancelButton className="w-full sm:w-auto" onClick={handleClose} disabled={loading} />
                   <ThemedButton type="submit" size="sm" className="w-full sm:w-auto" disabled={loading}>
                     <div className="flex items-center justify-center gap-2">
@@ -328,7 +383,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
   );
 }
 
-const FormFieldControl = ({ form, name, label, icon, placeholder, disabled = false, type = "text", options = [] }: any) => {
+const FormFieldControl = ({ form, name, label, icon, placeholder, disabled = false, type = "text", options = [], primaryColor }: any) => {
   return (
     <Controller
       control={form.control}
@@ -336,10 +391,19 @@ const FormFieldControl = ({ form, name, label, icon, placeholder, disabled = fal
       render={({ field }) => (
         <FormItem className="w-full">
           <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
-            {icon} {label}
+            {React.cloneElement(icon, { style: { color: primaryColor } })} {label}
           </label>
           {type === "select" ? (
-            <Select {...field} showSearch className="w-full h-[33px]" placeholder={placeholder} disabled={disabled} options={options} optionFilterProp="label" />
+            <Select 
+              {...field} 
+              showSearch 
+              className="w-full h-[33px]" 
+              placeholder={placeholder} 
+              disabled={disabled} 
+              options={options} 
+              optionFilterProp="label" 
+              dropdownClassName="custom-slim-scrollbar" // Select dropdown भित्र पातलो स्क्रोलबार
+            />
           ) : type === "textarea" ? (
             <textarea 
               {...field} 

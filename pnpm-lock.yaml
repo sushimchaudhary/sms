@@ -16,7 +16,7 @@ importers:
         version: 5.2.2(react-hook-form@7.71.2(react@19.2.3))
       antd:
         specifier: ^6.3.1
-        version: 6.3.1(date-fns@4.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 6.3.1(date-fns@4.1.0)(moment@2.30.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       axios:
         specifier: ^1.14.0
         version: 1.14.0
@@ -38,6 +38,9 @@ importers:
       framer-motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      html2pdf.js:
+        specifier: ^0.14.0
+        version: 0.14.0
       js-cookie:
         specifier: ^3.0.5
         version: 3.0.5
@@ -50,6 +53,15 @@ importers:
       lucide-react:
         specifier: ^0.575.0
         version: 0.575.0(react@19.2.3)
+      nepali-date-converter:
+        specifier: ^3.4.0
+        version: 3.4.0
+      nepali-datepicker-react:
+        specifier: ^0.0.2
+        version: 0.0.2
+      nepali-datepicker-reactjs:
+        specifier: ^1.1.9
+        version: 1.1.9(react@19.2.3)
       next:
         specifier: 16.1.6
         version: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -2915,6 +2927,9 @@ packages:
   big.js@5.2.2:
     resolution: {integrity: sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==}
 
+  bikram-sambat-js@1.0.3:
+    resolution: {integrity: sha512-UwpyT8SucWzsKSHUHsJsyqbAYEsc+93qJBBWNZ6MPJfAEhUZYpw8eeX/Htd2z6QjJcalz52Qn5qSZznqACRShg==}
+
   body-parser@2.2.2:
     resolution: {integrity: sha512-oP5VkATKlNwcgvxi0vM0p/D3n2C3EReYVX+DNYs5TjZFn/oQt2j+4sVJtSMr18pdRr8wjTcBl6LoV+FUwzPmNA==}
     engines: {node: '>=18'}
@@ -2990,6 +3005,9 @@ packages:
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
+
+  classnames@2.5.1:
+    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
 
   clean-webpack-plugin@4.0.0:
     resolution: {integrity: sha512-WuWE1nyTNAyW5T7oNyys2EN0cfP2fdRxhxnIQWiAp0bMabPdHhoGxM8A6YL2GhqwgrPnnaemVE7nv5XJ2Fhh2w==}
@@ -3848,6 +3866,9 @@ packages:
     resolution: {integrity: sha512-fPU6BHNpsyIhr8yyMpTLLxAbkaK8ArIBcmZIRiBLiDhjeqvXolaEmDGmELFuX9I4xDcaKKcJl+TKZLqruBbmWA==}
     engines: {node: '>=8.0.0'}
 
+  html2pdf.js@0.14.0:
+    resolution: {integrity: sha512-yvNJgE/8yru2UeGflkPdjW8YEY+nDH5X7/2WG4uiuSCwYiCp8PZ8EKNiTAa6HxJ1NjC51fZSIEq6xld5CADKBQ==}
+
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
@@ -4430,6 +4451,9 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
+  moment@2.30.1:
+    resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
+
   motion-dom@12.38.0:
     resolution: {integrity: sha512-pdkHLD8QYRp8VfiNLb8xIBJis1byQ9gPT3Jnh2jqfFtAsWUA3dEepDlsWe/xMpO8McV+VdpKVcp+E+TGJEtOoA==}
 
@@ -4472,6 +4496,22 @@ packages:
 
   neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
+
+  nepali-date-converter@3.4.0:
+    resolution: {integrity: sha512-hBojNXCQN69I533CnxNubl72uNx2Zcow9t2bOML3CxXv227s7NKA2kStUGO5xysg0SwsubTTxAO6tcg9IhS61w==}
+    engines: {node: '>=6.0.0'}
+
+  nepali-datepicker-react@0.0.2:
+    resolution: {integrity: sha512-z/3wKTUfJ2cEUU3LybhMx3OWx4rjoEtdphHqhx0SU8vJru8EB3RYvAJQLFvKdWmX2eOgbyUy2mcaRTzHJovZYg==}
+
+  nepali-datepicker-reactjs@1.1.9:
+    resolution: {integrity: sha512-NDqOAaHKNtE5tjNaK4WyQWMVeo/HBmzcaCC54UZDZmiDh9gK0XiWGBqRE4a8zh8xrEHC8ICPh+Y4E95K1Tkcag==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: ^18.2.0
+
+  nepali-number@1.0.3:
+    resolution: {integrity: sha512-Vb6aMQM/xtE7KiiEhemgDcACxIMaDn18Ub/imWXB6JlhDwc2qVDnGW+sR0gDLPQmyiyk06bkKze1oK88FxWIjw==}
 
   next-intl-swc-plugin-extractor@4.11.0:
     resolution: {integrity: sha512-WUGBSxGNd8eQ0rAsJHFmRw2H7+SZAXQIY/HAnYM57JaUsj5D2vx4KOz4zFtXlyKDtsw9awHfgWVvBae2/RDF9A==}
@@ -7798,7 +7838,7 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
-  '@rc-component/picker@1.9.0(date-fns@4.1.0)(dayjs@1.11.20)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@rc-component/picker@1.9.0(date-fns@4.1.0)(dayjs@1.11.20)(moment@2.30.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@rc-component/overflow': 1.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/resize-observer': 1.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -7810,6 +7850,7 @@ snapshots:
     optionalDependencies:
       date-fns: 4.1.0
       dayjs: 1.11.20
+      moment: 2.30.1
 
   '@rc-component/portal@2.2.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -8559,7 +8600,7 @@ snapshots:
 
   ansis@4.2.0: {}
 
-  antd@6.3.1(date-fns@4.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  antd@6.3.1(date-fns@4.1.0)(moment@2.30.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
       '@ant-design/colors': 8.0.1
       '@ant-design/cssinjs': 2.1.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -8585,7 +8626,7 @@ snapshots:
       '@rc-component/mutate-observer': 2.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/notification': 1.2.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/pagination': 1.2.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@rc-component/picker': 1.9.0(date-fns@4.1.0)(dayjs@1.11.20)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@rc-component/picker': 1.9.0(date-fns@4.1.0)(dayjs@1.11.20)(moment@2.30.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/progress': 1.0.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/qrcode': 1.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/rate': 1.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -8770,12 +8811,13 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base64-arraybuffer@1.0.2:
-    optional: true
+  base64-arraybuffer@1.0.2: {}
 
   baseline-browser-mapping@2.10.0: {}
 
   big.js@5.2.2: {}
+
+  bikram-sambat-js@1.0.3: {}
 
   body-parser@2.2.2:
     dependencies:
@@ -8872,6 +8914,8 @@ snapshots:
     dependencies:
       clsx: 2.1.1
 
+  classnames@2.5.1: {}
+
   clean-webpack-plugin@4.0.0(webpack@5.106.2):
     dependencies:
       del: 4.1.1
@@ -8967,7 +9011,6 @@ snapshots:
   css-line-break@2.1.0:
     dependencies:
       utrie: 1.0.2
-    optional: true
 
   cssesc@3.0.0: {}
 
@@ -9105,7 +9148,6 @@ snapshots:
   dompurify@3.3.3:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
-    optional: true
 
   dotenv@17.3.1: {}
 
@@ -9852,7 +9894,12 @@ snapshots:
     dependencies:
       css-line-break: 2.1.0
       text-segmentation: 1.0.3
-    optional: true
+
+  html2pdf.js@0.14.0:
+    dependencies:
+      dompurify: 3.3.3
+      html2canvas: 1.4.1
+      jspdf: 4.2.1
 
   http-errors@2.0.1:
     dependencies:
@@ -10359,6 +10406,8 @@ snapshots:
 
   minimist@1.2.8: {}
 
+  moment@2.30.1: {}
+
   motion-dom@12.38.0:
     dependencies:
       motion-utils: 12.36.0
@@ -10403,6 +10452,21 @@ snapshots:
   negotiator@1.0.0: {}
 
   neo-async@2.6.2: {}
+
+  nepali-date-converter@3.4.0: {}
+
+  nepali-datepicker-react@0.0.2:
+    dependencies:
+      classnames: 2.5.1
+      moment: 2.30.1
+
+  nepali-datepicker-reactjs@1.1.9(react@19.2.3):
+    dependencies:
+      bikram-sambat-js: 1.0.3
+      nepali-number: 1.0.3
+      react: 19.2.3
+
+  nepali-number@1.0.3: {}
 
   next-intl-swc-plugin-extractor@4.11.0: {}
 
@@ -11422,7 +11486,6 @@ snapshots:
   text-segmentation@1.0.3:
     dependencies:
       utrie: 1.0.2
-    optional: true
 
   throttle-debounce@5.0.2: {}
 
@@ -11643,7 +11706,6 @@ snapshots:
   utrie@1.0.2:
     dependencies:
       base64-arraybuffer: 1.0.2
-    optional: true
 
   validate-npm-package-name@7.0.2: {}
 

@@ -1,36 +1,94 @@
 "use client";
 
-import React, { useState,  } from "react";
+import React, { useState } from "react";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { PageHeader } from "@/components/PageHeader";
-import {  Search, X, Users, Filter, SlidersHorizontal } from "lucide-react";
+import {
+  Search,
+  X,
+  Users,
+  Filter,
+  SlidersHorizontal,
+  Calendar,
+} from "lucide-react";
 import { ThemedInput } from "@/components/ui/ThemedInput";
 import StudentAttendanceTable from "@/components/dashboard/attendance/studentAttendanceTable";
 import BulkAttendanceForm from "@/components/dashboard/attendance/bulkStudentAttendanceForm";
-import { Select, DatePicker } from "antd";
+import { Select } from "antd";
 import dayjs from "dayjs";
 import StudentAttendanceForm from "@/components/dashboard/attendance/studentAttendanceForm";
 
-const { RangePicker } = DatePicker;
+// ─── नेपाली मिति डिपेंडेन्सीहरू ──────────────────────────────────────────────────
+import NepaliDate from "nepali-date-converter";
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import "nepali-datepicker-reactjs/dist/index.css";
+import CalendarPicker from "@/components/ui/Calendar";
+
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" */
+const adToBSValue = (adStr: any): string => {
+  if (!adStr) return "";
+  const cleanAdStr = dayjs.isDayjs(adStr)
+    ? adStr.format("YYYY-MM-DD")
+    : String(adStr);
+
+  try {
+    const nd = new NepaliDate(new Date(cleanAdStr));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+};
+
+/** BS "YYYY-MM-DD" → AD "YYYY-MM-DD" */
+const bsToADValue = (bsStr: string): string => {
+  if (!bsStr) return "";
+  try {
+    const [y, m, d] = bsStr.split("-").map(Number);
+    const nd = new NepaliDate(y, m - 1, d);
+    const ad = nd.toJsDate();
+    const ay = ad.getFullYear();
+    const am = String(ad.getMonth() + 1).padStart(2, "0");
+    const adDay = String(ad.getDate()).padStart(2, "0");
+    return `${ay}-${am}-${adDay}`;
+  } catch {
+    return "";
+  }
+};
 
 export default function AttendancePage() {
-  const [isModalOpen, setIsModalOpen]   = useState(false);
-  const [isBulkOpen, setIsBulkOpen]     = useState(false);
-  const [editData, setEditData]         = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [editData, setEditData] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [searchQuery, setSearchQuery]   = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   /* ── Page-level filters ── */
-  const [filterClass, setFilterClass]     = useState<string | null>(null);
+  const [filterClass, setFilterClass] = useState<string | null>(null);
   const [filterSection, setFilterSection] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus]   = useState<string | null>(null);
-  const [filterDateRange, setFilterDateRange] = useState<[string, string] | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
-  /* ── Class/section options are passed UP from the table via a callback ── */
-  const [classOptions, setClassOptions]     = useState<{ value: string; label: string }[]>([]);
-  const [sectionOptions, setSectionOptions] = useState<{ value: string; label: string }[]>([]);
+  // टेबलले [string, string] वा null आशा गर्छ (AD फॉर्मेटमा)
+  const [filterDateRange, setFilterDateRange] = useState<
+    [string, string] | null
+  >(null);
 
-  const activeFilterCount = [filterClass, filterSection, filterStatus, filterDateRange].filter(Boolean).length;
+  /* ── Class/section options ── */
+  const [classOptions, setClassOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [sectionOptions, setSectionOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+
+  const activeFilterCount = [
+    filterClass,
+    filterSection,
+    filterStatus,
+    filterDateRange,
+  ].filter(Boolean).length;
 
   const clearAllFilters = () => {
     setFilterClass(null);
@@ -41,18 +99,44 @@ export default function AttendancePage() {
 
   const statusOptions = [
     { value: "present", label: "Present" },
-    { value: "absent",  label: "Absent"  },
-    { value: "leave",   label: "Leave"   },
-    { value: "late",    label: "Late"    },
+    { value: "absent", label: "Absent" },
+    { value: "leave", label: "Leave" },
+    { value: "late", label: "Late" },
   ];
 
-  const handleSuccess    = () => setRefreshTrigger((p) => p + 1);
-  const handleCloseSingle = () => { setIsModalOpen(false); setEditData(null); };
-  const handleEdit        = (data: any) => { setEditData(data); setIsModalOpen(true); };
+  const handleSuccess = () => setRefreshTrigger((p) => p + 1);
+  const handleCloseSingle = () => {
+    setIsModalOpen(false);
+    setEditData(null);
+  };
+  const handleEdit = (data: any) => {
+    setEditData(data);
+    setIsModalOpen(true);
+  };
+
+  // छुट्टाछुट्टै स्टार्ट र एन्ड डेट ह्यान्डलरहरू
+  const handleStartDateChange = (bsVal: string) => {
+    const adStart = bsToADValue(bsVal);
+    if (!bsVal) {
+      setFilterDateRange(null);
+    } else {
+      const currentEnd = filterDateRange?.[1] || adStart; // यदि एन्ड डेट छैन भने स्टार्ट डेटलाई नै राख्ने
+      setFilterDateRange([adStart, currentEnd]);
+    }
+  };
+
+  const handleEndDateChange = (bsVal: string) => {
+    const adEnd = bsToADValue(bsVal);
+    if (!bsVal) {
+      setFilterDateRange(null);
+    } else {
+      const currentStart = filterDateRange?.[0] || adEnd; // यदि स्टार्ट डेट छैन भने एन्ड डेटलाई नै राख्ने
+      setFilterDateRange([currentStart, adEnd]);
+    }
+  };
 
   return (
     <div className="space-y-3 font-mukta">
-
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <PageHeader
@@ -85,29 +169,20 @@ export default function AttendancePage() {
           <ThemedButton
             onClick={() => setIsBulkOpen(true)}
             size="sm"
-            
             className="py-1.5 flex items-center gap-2"
           >
             <Users size={14} />
             <span> Mark Attendance</span>
           </ThemedButton>
-
-          {/* Single Mark */}
-          {/* <ThemedButton
-            onClick={() => { setEditData(null); setIsModalOpen(true); }}
-            size="sm"
-            className="py-1.5 flex items-center gap-2"
-          >
-            <Plus size={14} />
-            <span>Mark Attendance</span>
-          </ThemedButton> */}
         </div>
       </div>
 
       {/* ── Filter Row ── */}
       <div className="flex items-center gap-2 px-4 py-2 bg-white rounded shadow-sm border border-gray-200 flex-wrap">
         <SlidersHorizontal size={13} className="text-[#8094ae]" />
-        <span className="text-[10px] font-bold text-[#8094ae] uppercase tracking-wide mr-1">Filter:</span>
+        <span className="text-[10px] font-bold text-[#8094ae] uppercase tracking-wide mr-1">
+          Filter:
+        </span>
 
         {/* Class */}
         <Select
@@ -146,26 +221,33 @@ export default function AttendancePage() {
           size="small"
         />
 
-        {/* Date Range */}
-        <RangePicker
-          size="small"
-          className="h-[28px] text-[11px]"
-          format="YYYY-MM-DD"
-          onChange={(_, dateStrings) => {
-            if (dateStrings[0] && dateStrings[1]) {
-              setFilterDateRange([dateStrings[0], dateStrings[1]]);
-            } else {
-              setFilterDateRange(null);
-            }
-          }}
-          value={
-            filterDateRange
-              ? [dayjs(filterDateRange[0]), dayjs(filterDateRange[1])]
-              : null
-          }
-        />
+       {/* ── नेपाली मिति रेन्ज फिल्टर ── */}
+        <div className="flex items-center gap-2 dynamic-nepali-container [&>.ndp-container]:!z-[9999] [&>.ndp-container]:!left-auto [&>.ndp-container]:!right-0">
+          
+          {/* Start Date Picker */}
+          <div className="w-[145px]">
+            <CalendarPicker
+              value={filterDateRange ? adToBSValue(filterDateRange[0]) : ""}
+              onChange={(date: string) => {
+                handleStartDateChange(date); // यहाँ Start Date को लागि फङ्सन बोलाउनुहोस्
+              }}
+            />
+          </div>
 
-        {/* Clear */}
+          <span className="text-[10px] font-bold text-[#8094ae] px-0.5">to</span>
+
+          {/* End Date Picker */}
+          <div className="w-[145px]">
+            <CalendarPicker
+              value={filterDateRange ? adToBSValue(filterDateRange[1]) : ""}
+              onChange={(date: string) => {
+                handleEndDateChange(date); // यहाँ End Date को लागि फङ्सन बोलाउनुहोस्
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Clear All */}
         {activeFilterCount > 0 && (
           <button
             onClick={clearAllFilters}
@@ -178,7 +260,9 @@ export default function AttendancePage() {
         {/* Record count */}
         <span className="ml-auto text-[10px] font-bold text-[#8094ae] flex items-center gap-1">
           <Filter size={10} />
-          {activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active` : "No filters"}
+          {activeFilterCount > 0
+            ? `${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active`
+            : "No filters"}
         </span>
       </div>
 
@@ -187,12 +271,10 @@ export default function AttendancePage() {
         onEdit={handleEdit}
         refreshTrigger={refreshTrigger}
         searchQuery={searchQuery}
-        /* pass filters down */
         filterClass={filterClass}
         filterSection={filterSection}
         filterStatus={filterStatus}
         filterDateRange={filterDateRange}
-        /* pass options up */
         onClassOptionsChange={setClassOptions}
         onSectionOptionsChange={setSectionOptions}
       />

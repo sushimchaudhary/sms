@@ -139,3 +139,40 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+
+
+/* पपअप कन्टेनरको साइज बढाउन */
+.ndp-container {
+    width: 300px !important; 
+    min-width: 300px !important;
+}
+
+/* पपअप भित्रका दिनहरूको साइज मिलाउन */
+.ndp-calendar-table {
+    width: 100% !important;
+}
+
+.ndp-calendar-table td {
+    padding: 8px !important; /* दिनहरू बीचको खाली ठाउँ बढाउन */
+}
+
+
+
+/* Scrollbar hide गर्ने तरिका */
+.hide-scrollbar .ant-select-dropdown .rc-virtual-list {
+  scrollbar-width: none; /* Firefox को लागि */
+  -ms-overflow-style: none; /* IE र Edge को लागि */
+}
+
+.hide-scrollbar .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, र Opera को लागि */
+}
+
+
+/* Popover को default padding हटाउने */
+.custom-calendar-popover .ant-popover-inner {
+  padding: 0 !important;
+  border-radius: 12px;
+  box-shadow: none !important;
+}

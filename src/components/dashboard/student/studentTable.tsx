@@ -54,6 +54,42 @@ interface StudentsTableProps {
   searchQuery?: string;
 }
 
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    const date = new Date(adDateString);
+    if (isNaN(date.getTime())) return adDateString;
+
+    const adYear = date.getFullYear();
+    const adMonth = date.getMonth() + 1;
+    const adDay = date.getDate();
+
+    // सामान्यतया नेपाली क्यालेन्डर AD भन्दा ५६ वर्ष ८ महिना १५ दिन अगाडि हुन्छ
+    let bsYear = adYear + 56;
+    let bsMonth = adMonth + 8;
+    let bsDay = adDay + 15;
+
+    // महिना र दिन संरचना मिलान
+    if (bsDay > 30) {
+      bsDay -= 30;
+      bsMonth += 1;
+    }
+    if (bsMonth > 12) {
+      bsMonth -= 12;
+      bsYear += 1;
+    }
+
+    const pad = (num: number) => String(num).padStart(2, "0");
+    return `${bsYear}-${pad(bsMonth)}-${pad(bsDay)}`;
+  } catch (error) {
+    console.error("Date conversion error:", error);
+    return adDateString;
+  }
+};
+
+
+
+
 const PAGE_SIZE = 20;
 
 const StudentsTable = ({
@@ -70,6 +106,12 @@ const StudentsTable = ({
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | number | null>(null);
+
+
+  const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
+
 
   // --- Helpers ---
   const resolveSchoolName = (school: any): string => {
@@ -387,7 +429,7 @@ const StudentsTable = ({
                           <div className="flex items-center gap-2">
                             <Calendar size={10} className="text-[#8094ae]" />{" "}
                             <span className="text-[10px] text-[#526484]">
-                              {item.dob || "N/A"} ({item.gender})
+                              {formatToNepaliBS(item.dob || "N/A")} ({item.gender})
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-cyan-500">

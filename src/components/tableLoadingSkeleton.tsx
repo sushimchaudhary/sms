@@ -13,4 +13,4 @@ export default function TableLoadingSkeleton({ rows = 3, cols = 5 }: { rows?: nu
       ))}
     </>
   );
-}
+} 

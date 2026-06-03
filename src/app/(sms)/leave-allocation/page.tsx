@@ -1,56 +1,38 @@
 "use client";
 
 import React, { useState } from "react";
-
 import { ThemedButton } from "@/components/ui/themedButton";
 import { PageHeader } from "@/components/PageHeader";
-import SessionsTable from "@/components/dashboard/sessions/sessionsTable";
-import SessionsForm from "@/components/dashboard/sessions/sessionsForm";
+import { Plus, Search, X } from "lucide-react";
 import { ThemedInput } from "@/components/ui/ThemedInput";
+import LeaveAllocationTable from "@/components/dashboard/leave/leaveAllocationTable";
+import LeaveAllocationForm from "@/components/dashboard/leave/leaveAllocationForm"; // Tapaiko allocation form
 
-
-import { Plus , Search } from "lucide-react";
-import { X } from "lucide-react";
-
-export default function OrganizationPage() {
+export default function LeaveAllocationPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSuccess = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
+  const handleSuccess = () => setRefreshTrigger((prev) => prev + 1);
 
   const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsModalOpen(false);
-      setIsClosing(false);
-      setEditData(null);
-    }, 300);
-  };
-
-  const handleOpen = () => {
+    setIsModalOpen(false);
     setEditData(null);
-    setIsClosing(false);
-    setIsModalOpen(true);
   };
 
   const handleEdit = (data: any) => {
     setEditData(data);
     setIsModalOpen(true);
-    setIsClosing(false);
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 font-mukta">
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <PageHeader
-          title="Session Management"
-          description="Manage and monitor all active sessions in one place."
+          title="Leave Allocation"
+          description="Allocate annual leave quotas and manage balance tracking for teachers and staff members."
         />
 
         <div className="flex items-center gap-3">
@@ -58,11 +40,11 @@ export default function OrganizationPage() {
           <div className="relative">
             <ThemedInput
               type="text"
-              placeholder="Search session..."
+              placeholder="Search employee or leave type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={<Search size={15} />}
-              className="h-7"
+              className="h-7 w-64"
             />
             {searchQuery && (
               <button
@@ -74,27 +56,36 @@ export default function OrganizationPage() {
             )}
           </div>
 
+          {/* Allocate Leave Button */}
           <ThemedButton
-            onClick={handleOpen}
+            onClick={() => {
+              setEditData(null);
+              setIsModalOpen(true);
+            }}
             size="sm"
-            className=" py-1.5 w-fit flex items-center gap-2"
+            className="py-1.5 w-fit flex items-center gap-2"
           >
             <Plus size={14} />
-            <span>Register Session</span>
+            <span className="hidden sm:inline">Allocate Leave</span>
+            <span className="sm:hidden text-[11px]">Allocate</span>
           </ThemedButton>
         </div>
       </div>
 
-      <SessionsTable onEdit={handleEdit} refreshTrigger={refreshTrigger} searchQuery={searchQuery} />
+      {/* Table Section */}
+      <LeaveAllocationTable
+        onEdit={handleEdit}
+        refreshTrigger={refreshTrigger}
+        searchQuery={searchQuery}
+      />
 
-      <SessionsForm
+      {/* Allocation Form Modal */}
+      <LeaveAllocationForm
         isOpen={isModalOpen}
         initialData={editData}
         onClose={handleClose}
         onSuccess={handleSuccess}
       />
-
-      
     </div>
   );
 }

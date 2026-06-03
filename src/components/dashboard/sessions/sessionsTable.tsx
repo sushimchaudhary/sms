@@ -38,6 +38,8 @@ interface SessionsTableProps {
 
 const PAGE_SIZE = 20;
 
+
+
 const SessionsTable = ({
   onEdit,
   refreshTrigger,
@@ -51,6 +53,8 @@ const SessionsTable = ({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [schoolsMap, setSchoolsMap] = useState<Record<string, string>>({});
+
+ 
 
   // ── Fetch all schools and build ID → name map ─────────────────────────────
   useEffect(() => {
@@ -66,7 +70,6 @@ const SessionsTable = ({
           if (id) map[String(id)] = s.name || s.school_name || "";
         });
         setSchoolsMap(map);
-        console.log("Schools Map:", map); // debug
       } catch (error) {
         console.error("Failed to fetch schools:", error);
       }
@@ -82,7 +85,6 @@ const SessionsTable = ({
       const allSessions = Array.isArray(res)
         ? res
         : res?.results || res?.data || [];
-      console.log("Sessions:", allSessions); // debug
       setSessionsList(allSessions);
     } catch (error) {
       console.error("Fetch Error:", error);
@@ -156,15 +158,14 @@ const SessionsTable = ({
   return (
     <div className="space-y-1">
       <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
-         <div className="overflow-x-auto max-h-[395px] scrollbar-hide relative">
-        <table className="w-full text-left border-separate border-spacing-0">
-          <thead className="sticky top-0 z-30 shadow-sm">
+        <div className="overflow-x-auto max-h-[395px] scrollbar-hide relative">
+          <table className="w-full text-left border-separate border-spacing-0">
+            <thead className="sticky top-0 z-30 shadow-sm">
               <tr className="bg-[#f5f6fa]">
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase w-16">S.N</th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase">Session Info</th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase">Institution</th>
-                <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase">Timeline</th>
-               
+                <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase">Timeline (BS)</th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase">Status</th>
                 <th className="px-4 py-2 text-[11px] font-bold text-[#8094ae] uppercase text-right w-24">Action</th>
               </tr>
@@ -175,7 +176,7 @@ const SessionsTable = ({
                 <TableLoadingSkeleton rows={5} cols={6} />
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center">
+                  <td colSpan={6} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
                       {searchQuery ? (
                         <SearchX size={32} className="text-rose-300" />
@@ -232,7 +233,8 @@ const SessionsTable = ({
                           </span>
                           <div className="flex items-center gap-1 text-[11px] text-[#364a63] font-medium px-2 py-0.5">
                             <Calendar size={10} className="text-blue-400" />
-                            {item.start_date}
+                            {/* यहाँ नेपाली BS मिति देखिन्छ */}
+                            {(item.start_date)}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -241,11 +243,14 @@ const SessionsTable = ({
                           </span>
                           <div className="flex items-center gap-1 text-[11px] text-[#364a63] font-medium px-2 py-0.5">
                             <Calendar size={10} className="text-rose-400" />
-                            {item.end_date}
+                            {/* यहाँ नेपाली BS मिति देखिन्छ */}
+                            {(item.end_date)}
                           </div>
                         </div>
                       </div>
                     </td>
+                    
+                    {/* Status */}
                     <td className="px-6 py-1">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${

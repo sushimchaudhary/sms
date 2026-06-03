@@ -7,11 +7,27 @@ import {
   Clock, AlertCircle, Layers, History, Download, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { AttendanceServices } from "@/services/attendanceServices";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
 import dayjs from "dayjs";
+import NepaliDate from "nepali-date-converter";
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 interface StudentAttendance {
@@ -33,12 +49,10 @@ interface AttendanceTableProps {
   onEdit: (data: StudentAttendance) => void;
   refreshTrigger: number;
   searchQuery?: string;
-  /* filters passed from page */
   filterClass?: string | null;
   filterSection?: string | null;
   filterStatus?: string | null;
   filterDateRange?: [string, string] | null;
-  /* callbacks to lift option lists up to page */
   onClassOptionsChange?: (opts: { value: string; label: string }[]) => void;
   onSectionOptionsChange?: (opts: { value: string; label: string }[]) => void;
 }
@@ -72,6 +86,10 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId]       = useState<string | number | null>(null);
 
+  const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
+
   /* ── Fetch ── */
   const fetchAttendance = async () => {
     try {
@@ -94,7 +112,7 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
     onClassOptionsChange?.(names.map((n) => ({ value: n, label: n })));
   }, [list]);
 
-  /* ── Lift section options up to page (filtered by selected class) ── */
+  /* ── Lift section options up to page ── */
   useEffect(() => {
     const source = filterClass ? list.filter((i) => i.class_name === filterClass) : list;
     const names  = [...new Set(source.map((i) => i.section_name).filter(Boolean))].sort();
@@ -129,7 +147,6 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
     });
   }, [list, searchQuery, filterClass, filterSection, filterStatus, filterDateRange]);
 
-  /* Reset to page 1 whenever filters change */
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
@@ -138,6 +155,107 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
   const paginatedItems = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const totalPages     = Math.ceil(filteredData.length / PAGE_SIZE);
 
+  // ── EXPORT TO PDF LOGIC ────────────────────────────────────────────────────
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Student Attendance Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Page: ${currentPage} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const tableData = paginatedItems.map((item, index) => {
+      const statusLabel = STATUS_CONFIG[item.status]?.label || item.status;
+      return [
+        (currentPage - 1) * PAGE_SIZE + index + 1,
+        `${item.student_name}\n(ID: ${item.student_id || "-"})`,
+        statusLabel.toUpperCase(),
+        `${item.class_name} - ${item.section_name}`,
+        item.marked_by_name || item.marked_by || "N/A",
+        formatToNepaliBS(item.date),
+      ];
+    });
+
+    autoTable(doc, {
+      head: [["S.N.", "Student Details", "Status", "Class / Sec", "Marked By", "Date"]],
+      body: tableData,
+      startY: 28,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [54, 74, 99] },
+    });
+
+    doc.save(`Student_Attendance_Page_${currentPage}.pdf`);
+    toast.success("PDF Downloaded successfully");
+  };
+
+  // ── HTML PRINT PREVIEW LOGIC ────────────────────────────────────────────────
+  const handlePrint = () => {
+    const printContent = paginatedItems.map((item, index) => {
+      const statusLabel = STATUS_CONFIG[item.status]?.label || item.status;
+      return `
+        <tr>
+          <td>${(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+          <td><strong>${item.student_name}</strong><br><small style="color: #6366f1">ID: ${item.student_id || "-"}</small></td>
+          <td><span class="status-badge">${statusLabel}</span></td>
+          <td>${item.class_name} - ${item.section_name}</td>
+          <td>${item.marked_by_name || item.marked_by || "—"}</td>
+          <td>${formatToNepaliBS(item.date)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Student Attendance List Print</title>
+            <style>
+              body { font-family: sans-serif; padding: 30px; color: #1e293b; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; font-size: 12px; }
+              th { background-color: #f8fafc; color: #64748b; text-transform: uppercase; }
+              h2 { color: #1e293b; margin-bottom: 5px; }
+              .status-badge { font-weight: bold; text-transform: uppercase; font-size: 10px; }
+            </style>
+          </head>
+          <body>
+            <h2>Student Attendance Report</h2>
+            <div>Generated for Page ${currentPage} | Total Records: ${filteredData.length}</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>S.N.</th>
+                  <th>Student Details</th>
+                  <th>Status</th>
+                  <th>Class / Sec</th>
+                  <th>Marked By</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>${printContent}</tbody>
+            </table>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedItems.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedItems.map((i) => i.id));
+    }
+  };
+
+  const handleSelectOne = (id: string | number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
   /* ── Delete ── */
   const handleConfirmDelete = async () => {
     const ids = selectedIds.length > 0 ? selectedIds : deleteId ? [deleteId] : [];
@@ -145,7 +263,7 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
       setDeleteLoading(true);
       await Promise.all(ids.map((id) => AttendanceServices.deleteStudentAttendance(id)));
       toast.success(ids.length > 1 ? "Selected records deleted" : "Record deleted successfully");
-      setList((prev) => prev.filter((item) => !ids.includes(item.id)));
+      fetchAttendance();
       setIsModalOpen(false);
       setSelectedIds([]);
     } catch {
@@ -166,23 +284,17 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
           <table className="w-full text-left border-separate border-spacing-0">
             <thead className="sticky top-0 z-30 shadow-sm">
               <tr className="bg-[#f5f6fa]">
-                <th className="px-4 py-1 w-10 border-b text-center">
+                <th className="px-4 py-1 w-10 border-b">
                   <input
                     type="checkbox"
                     checked={selectedIds.length === paginatedItems.length && paginatedItems.length > 0}
-                    onChange={() =>
-                      setSelectedIds(
-                        selectedIds.length === paginatedItems.length
-                          ? []
-                          : paginatedItems.map((i) => i.id)
-                      )
-                    }
+                    onChange={handleSelectAll}
                     className="rounded border-gray-300 text-blue-600 cursor-pointer"
                   />
                 </th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase border-b">Student & ID</th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase border-b text-center">Status</th>
-                <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase border-b">Class / Sec</th>
+                <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase border-b text-center">Class / Sec</th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase border-b text-center">Marked By</th>
                 <th className="px-6 py-2 text-[11px] font-bold text-[#8094ae] uppercase border-b">Update Info</th>
                 <th className="px-4 py-2 text-[11px] font-bold text-[#8094ae] uppercase text-right w-24 border-b">Action</th>
@@ -199,12 +311,16 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
                       {searchQuery || filterClass || filterSection || filterStatus || filterDateRange
                         ? <SearchX size={32} className="text-rose-300" />
                         : <Inbox size={32} className="text-gray-200" />}
-                      <span className="text-sm font-bold text-[#364a63]">No records found.</span>
+                      <span className="text-sm font-bold text-[#364a63]">
+                        {searchQuery || filterClass || filterSection || filterStatus || filterDateRange
+                          ? "No matching records found."
+                          : "No attendance recorded."}
+                      </span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                paginatedItems.map((item) => {
+                paginatedItems.map((item, index) => {
                   const isSelected = selectedIds.includes(item.id);
                   const status     = STATUS_CONFIG[item.status] || STATUS_CONFIG.present;
                   return (
@@ -212,17 +328,11 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
                       key={item.id}
                       className={`hover:bg-gray-50 transition-colors ${isSelected ? "bg-blue-50/40" : ""}`}
                     >
-                      <td className="px-4 py-1 text-center">
+                      <td className="px-4 py-1">
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() =>
-                            setSelectedIds((prev) =>
-                              prev.includes(item.id)
-                                ? prev.filter((i) => i !== item.id)
-                                : [...prev, item.id]
-                            )
-                          }
+                          onChange={() => handleSelectOne(item.id)}
                           className="rounded border-gray-300 text-blue-600 cursor-pointer"
                         />
                       </td>
@@ -231,7 +341,7 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
                       <td className="px-6 py-2">
                         <div className="flex flex-col">
                           <span className="text-[11px] text-[#364a63] font-bold uppercase">{item.student_name}</span>
-                          <span className="text-[10px] text-indigo-500 font-medium tracking-tight">{item.student_id}</span>
+                          <span className="text-[10px] text-indigo-500 font-medium tracking-tight">{item.student_id || "—"}</span>
                         </div>
                       </td>
 
@@ -259,7 +369,7 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
                             <UserCheck size={12} className="text-emerald-500" />
                             {item.marked_by_name || item.marked_by || "N/A"}
                           </span>
-                          <span className="text-[9px] text-[#8094ae] italic">Attendance: {item.date}</span>
+                          <span className="text-[9px] text-[#8094ae] italic">Attendance: {formatToNepaliBS(item.date)}</span>
                         </div>
                       </td>
 
@@ -268,7 +378,7 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
                         <div className="flex flex-col">
                           <span className="text-[10px] text-[#8094ae] flex items-center gap-1 font-medium">
                             <History size={10} className="text-blue-400" />
-                            {dayjs(item.updated_at).format("MMM DD, hh:mm A")}
+                            {formatToNepaliBS(item.updated_at)} at {dayjs(item.updated_at).format("hh:mm A")}
                           </span>
                           <span className="text-[9px] text-amber-600 pl-3.5 font-medium truncate max-w-[120px]">
                             {item.remarks || "No remarks"}
@@ -309,14 +419,14 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredData.length)} of {filteredData.length}
               </span>
               <button
-                onClick={() => toast.info("Generating PDF... Please wait.")}
-                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                onClick={downloadPDF}
+                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 <Download size={12} /> PDF
               </button>
               <ThemedButton
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-white rounded active:scale-95 transition-all shadow-sm"
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-white bg-slate-600 border border-slate-200 rounded hover:bg-slate-700 active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 <Printer size={12} /> Print
               </ThemedButton>
@@ -344,13 +454,13 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
 
       {/* ── Bulk delete bar ── */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
-          <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest pl-2">
-            {selectedIds.length} Records Selected
+        <div className="flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 px-1">
+          <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
+            {selectedIds.length} Record(s) Selected
           </span>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1 bg-red-500 text-white rounded text-[11px] font-bold hover:bg-red-600 active:scale-95 transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1 bg-red-500 text-white rounded text-[11px] font-bold hover:bg-red-600 active:scale-95 transition-all shadow-sm cursor-pointer"
           >
             <Trash2 size={12} /> Delete Selected
           </button>
@@ -359,10 +469,10 @@ const StudentAttendanceTable: React.FC<AttendanceTableProps> = ({
 
       <ConfirmModal
         isOpen={isModalOpen}
-        title={selectedIds.length > 0 ? "Delete Multiple Records?" : "Remove Attendance?"}
+        title={selectedIds.length > 0 ? "Delete Multiple Records?" : "Remove Attendance Record?"}
         message={
           selectedIds.length > 0
-            ? `Are you sure you want to delete ${selectedIds.length} attendance records?`
+            ? `Are you sure you want to delete ${selectedIds.length} student attendance records?`
             : "This action cannot be undone. Are you sure you want to delete this record?"
         }
         onConfirm={handleConfirmDelete}

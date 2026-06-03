@@ -15,6 +15,7 @@ import {
   EyeOff,
   Camera,
   Upload,
+  Phone,
 } from "lucide-react";
 import { Form, FormItem, FormMessage } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
@@ -36,6 +37,7 @@ interface StaffFormValues {
   password?: string;
   school_id: string | number;
   photo?: any;
+  phone: string;
 }
 
 export default function StaffForm({
@@ -60,6 +62,7 @@ export default function StaffForm({
       password: "",
       school_id: "",
       photo: null,
+      phone: "",
     },
   });
 
@@ -93,6 +96,7 @@ export default function StaffForm({
           designation: initialData.designation || "",
           school_id: currentSchoolId || "",
           password: "",
+         phone: initialData.user_phone || "",
         });
       } else {
         setPhotoPreview(null);
@@ -103,6 +107,7 @@ export default function StaffForm({
           designation: "",
           password: "",
           school_id: currentSchoolId || "",
+          phone: "",
         });
       }
     }
@@ -142,7 +147,7 @@ export default function StaffForm({
       formData.append("first_name", values.first_name);
       formData.append("last_name", values.last_name);
       formData.append("designation", values.designation);
-      ``;
+      formData.append("phone", values.phone);
 
       if (values.school_id) {
         formData.append("school", String(values.school_id));
@@ -291,9 +296,38 @@ export default function StaffForm({
                     label="Email Address"
                     icon={<Mail size={12} />}
                     placeholder="email@example.com"
-                    disabled={isUpdate}
                   />
-                  <FormFieldControl
+
+                  <Controller
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem className="w-full relative">
+                        <ThemedInput
+                          label="Phone Number"
+                          icon={<Phone size={12} />}
+                          placeholder="98XXXXXXXX"
+                          type="text"
+                          disabled={loading}
+                          {...field}
+                          onChange={(e) => {
+                            
+                            const cleanValue = e.target.value.replace(/\D/g, "");
+                            
+                            if (cleanValue.length <= 10) {
+                              field.onChange(cleanValue);
+                            }
+                          }}
+                        />
+                        <FormMessage className="text-[10px]" />
+                      </FormItem>
+                    )}
+                  />
+                 
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <FormFieldControl
                     form={form}
                     name="password"
                     label={isUpdate ? "New Password" : "Password"}
@@ -303,9 +337,6 @@ export default function StaffForm({
                     }
                     type="password"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
                   <FormFieldControl
                     form={form}
                     name="designation"

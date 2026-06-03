@@ -17,7 +17,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar,
 } from "recharts";
-import DashboardCalendar from "@/components/ui/dashboardCalendar";
+import NepaliDate from "nepali-date-converter";
+import CalendarGrid from "@/components/ui/CalendarGrid";
 
 // ─── Base URL + resolvePhoto (fixes dashboard photo not showing) ──────────────
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -334,6 +335,17 @@ useEffect(() => {
     return { total, approved, pending, rejected };
   }, [leaves]);
 
+      const [selectedMonthIndex, setSelectedMonthIndex] = useState(new NepaliDate().getMonth());
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 1000); // हरेक १ सेकेन्डमा अपडेट हुने
+
+      return () => clearInterval(timer); // कम्पोनेन्ट अनमाउन्ट हुँदा क्लियर गर्ने
+}, []);
+
   // ── Charts ────────────────────────────────────────────────────────────────
   const attChartData = useMemo(() => {
     const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -420,12 +432,15 @@ useEffect(() => {
                     <CalendarDays size={8} />{sessionName}
                   </span>
                 )}
-                {lastSync && (
-                  <span className="text-white/45 text-[10px] flex items-center gap-1.5">
-                    <Clock size={9} />
-                    Synced {lastSync.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                )}
+                 <p className="text-[13px] text-white font-medium flex items-center gap-1">
+                      <Clock size={14} className="text-white" />
+                      {/* यहाँ lastSync को सट्टा currentTime प्रयोग गर्नुहोस् */}
+                      {`Time: ${currentTime.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit", // सेकेन्ड पनि देखाउन चाहनुहुन्छ भने
+                      })}`}
+                    </p>
               </div>
             </div>
 
@@ -932,7 +947,11 @@ useEffect(() => {
               )}
             </div>
 
-            <DashboardCalendar primaryColor={primaryColor} />
+              <CalendarGrid 
+              selectedMonthIndex={selectedMonthIndex} 
+              setSelectedMonthIndex={setSelectedMonthIndex} 
+              className="bg-white rounded shadow-sm border border-gray-100 p-2 !h-full"
+            />
           </div>
         </div>
 

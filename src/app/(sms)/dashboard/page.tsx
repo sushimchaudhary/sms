@@ -33,7 +33,10 @@ import { SessionServices } from "@/services/sessionsServices";
 import { TeacherServices } from "@/services/teacherServices";
 import { StaffServices } from "@/services/staffServices";
 import useAuth from "@/lib/hooks/useAuth";
-import DashboardCalendar from "@/components/ui/dashboardCalendar";
+
+import CalendarGrid from "@/components/ui/CalendarGrid";
+import NepaliDate from "nepali-date-converter";
+import Link from "next/link";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getCount(d: any): number {
@@ -230,7 +233,10 @@ export default function DashboardPage() {
   const [allStudentFees, setAllStudentFees] = useState<any[]>([]);
   const [students,       setStudents]       = useState<any[]>([]);
   const [leaves,         setLeaves]         = useState<any[]>([]);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(new NepaliDate().getMonth());
+ const [currentTime, setCurrentTime] = useState(new Date());
 
+  
   const fetchAll = useCallback(async (isRefresh = false) => {
     
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -275,6 +281,8 @@ export default function DashboardPage() {
         const rawTeachers = getItems(tchR);
         const rawStaff = getItems(stfR);
 
+         
+
         let resolvedTeachers: any[] = rawTeachers;
         let resolvedStaff: any[] = rawStaff;
 
@@ -316,6 +324,15 @@ console.log("stfR result:", stfR);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 1000); // हरेक १ सेकेन्डमा अपडेट हुने
+
+  return () => clearInterval(timer); // कम्पोनेन्ट अनमाउन्ट हुँदा क्लियर गर्ने
+}, []);
 
   // ── Gender ────────────────────────────────────────────────────────────────
   const genderData = useMemo(() => {
@@ -467,31 +484,44 @@ console.log("stfR result:", stfR);
       <div className="max-w-screen-2xl mx-auto space-y-5">
 
  {/* ── Welcome Header Section ── */}
-<div className="flex items-center gap-4">
-  <div>
-    <h1 className="text-2xl font-black text-slate-700 tracking-tight">
-      {getGreeting()},{" "}
-      <span style={{ color: primaryColor }}>
-        {user?.name?.split(" ")[0] || "User"}
-      </span>
-    </h1>
+<div className="flex items-center justify-between gap-4">
+  {/* Left Side: Greeting */}
+  <div className="flex items-center gap-4">
+    <div>
+      <h1 className="text-2xl font-black text-slate-700 tracking-tight">
+        {getGreeting()},{" "}
+        <span style={{ color: primaryColor }}>
+          {user?.full_name?.split(" ")[0] || "User"}
+        </span>
+      </h1>
 
-    <div className="flex items-center gap-3 mt-1">
-      <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
-        {user?.role || "Staff"}
-      </span>
+      <div className="flex items-center gap-3 mt-1">
+        {/* <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
+          {user?.role || "Staff"}
+        </span> */}
 
-      <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-        <Clock size={10} className="text-slate-300" />
-        {lastSync
-          ? `Updated: ${lastSync.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}`
-          : "Fetching..."}
-      </p>
+        <p className="text-[13px] text-slate-700 font-medium flex items-center gap-1">
+  <Clock size={14} className="text-slate-500" />
+  {/* यहाँ lastSync को सट्टा currentTime प्रयोग गर्नुहोस् */}
+  {`Time: ${currentTime.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit", // सेकेन्ड पनि देखाउन चाहनुहुन्छ भने
+  })}`}
+</p>
+      </div>
     </div>
   </div>
+
+  {/* Right Side: Admission Button */}
+  <Link href="/student-admissions">
+    <button
+      style={{ backgroundColor: primaryColor }}
+      className="flex items-center gap-2 px-4 cursor-pointer py-2 text-white text-sm font-semibold rounded-md shadow-sm hover:opacity-90 transition-opacity"
+    >
+      <span>Admission</span>
+    </button>
+  </Link>
 </div>
 
         {/* ── Error ── */}
@@ -1140,7 +1170,11 @@ console.log("stfR result:", stfR);
             </div>
 
             {/* Calendar Section */}
-             <DashboardCalendar primaryColor={primaryColor} />
+            <CalendarGrid 
+              selectedMonthIndex={selectedMonthIndex} 
+              setSelectedMonthIndex={setSelectedMonthIndex} 
+              className="bg-white rounded shadow-sm border border-gray-100 p-2 !h-full"
+            />
 
           </div>
         </div>

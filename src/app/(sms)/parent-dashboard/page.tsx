@@ -18,7 +18,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from "recharts";
-import DashboardCalendar from "@/components/ui/dashboardCalendar";
+import CalendarGrid from "@/components/ui/CalendarGrid";
+import NepaliDate from "nepali-date-converter";
 
 // ─── Base URL + resolvePhoto ──────────────────────────────────────────────────
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -216,6 +217,16 @@ export default function ParentDashboard() {
   const className   = activeEnrollment?.class   ?? "—";
   const sectionName = activeEnrollment?.section ?? "—";
   const sessionName = activeEnrollment?.session ?? user?.active_session?.name ?? "—";
+      const [selectedMonthIndex, setSelectedMonthIndex] = useState(new NepaliDate().getMonth());
+    const [currentTime, setCurrentTime] = useState(new Date());
+  
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 1000); // हरेक १ सेकेन्डमा अपडेट हुने
+  
+        return () => clearInterval(timer); // कम्पोनेन्ट अनमाउन्ट हुँदा क्लियर गर्ने
+  }, []);
 
   const fetchDashboard = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -366,7 +377,7 @@ export default function ParentDashboard() {
                 <Mail size={10} className="shrink-0" />
                 {loading ? "—" : parentEmail}
               </p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <div className="flex items-center gap-7 mt-2 flex-wrap">
                 <span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-white/20 backdrop-blur-sm">
                   Parent
                 </span>
@@ -375,22 +386,25 @@ export default function ParentDashboard() {
                     <School size={9} />{schoolName}
                   </span>
                 )}
-                {!loading && parentId !== "—" && (
+                {/* {!loading && parentId !== "—" && (
                   <span className="bg-white/15 text-white/90 text-[10px] font-mono font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-white/15">
                     <Fingerprint size={10} />{parentId}
                   </span>
-                )}
+                )} */}
                 {!loading && sessionName !== "—" && (
                   <span className="bg-white/10 text-white/70 text-[9px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1">
                     <CalendarDays size={8} />{sessionName}
                   </span>
                 )}
-                {lastSync && (
-                  <span className="text-white/45 text-[10px] flex items-center gap-1.5">
-                    <Clock size={9} />
-                    Synced {lastSync.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                )}
+                <p className="text-[13px] text-white font-medium flex items-center gap-1">
+                      <Clock size={14} className="text-white" />
+                      {/* यहाँ lastSync को सट्टा currentTime प्रयोग गर्नुहोस् */}
+                      {`Time: ${currentTime.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit", // सेकेन्ड पनि देखाउन चाहनुहुन्छ भने
+                      })}`}
+                    </p>
               </div>
             </div>
 
@@ -887,8 +901,11 @@ export default function ParentDashboard() {
               )}
             </div>
 
-            <DashboardCalendar primaryColor={primaryColor} />
-
+  <CalendarGrid 
+              selectedMonthIndex={selectedMonthIndex} 
+              setSelectedMonthIndex={setSelectedMonthIndex} 
+              className="bg-white rounded shadow-sm border border-gray-100 p-2 !h-full"
+            />
             {/* All Children Overview */}
             {!loading && children.length > 1 && (
               <div className="bg-white rounded shadow-sm border border-slate-100 p-3">

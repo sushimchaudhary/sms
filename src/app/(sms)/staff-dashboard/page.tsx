@@ -18,8 +18,9 @@ import {
   ResponsiveContainer, BarChart, Bar, PieChart as RePieChart,
   Pie, Cell, Legend,
 } from "recharts";
-import DashboardCalendar from "@/components/ui/dashboardCalendar";
-import { StaffServices } from "@/services/staffServices";
+import CalendarGrid from "@/components/ui/CalendarGrid";
+import NepaliDate from "nepali-date-converter";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StudentFee {
@@ -196,7 +197,16 @@ export default function StaffAccountingDashboard() {
   const [feeTypes,       setFeeTypes]       = useState<FeeType[]>([]);
   const [totalStudents,  setTotalStudents]  = useState(0);
   const [notifications,  setNotifications]  = useState<Notification[]>([]);
+    const [selectedMonthIndex, setSelectedMonthIndex] = useState(new NepaliDate().getMonth());
+const [currentTime, setCurrentTime] = useState(new Date());
 
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 1000); // हरेक १ सेकेन्डमा अपडेट हुने
+
+  return () => clearInterval(timer); // कम्पोनेन्ट अनमाउन्ट हुँदा क्लियर गर्ने
+}, []);
   // ── Fetch ────────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -331,9 +341,12 @@ export default function StaffAccountingDashboard() {
     return "Good Night 🌙";
   };
 
-  const staffName  = user?.name || user?.username || "Staff";
-  const staffEmail = user?.email || "—";
-  const staffRole  = user?.role  || "Accountant";
+// ✅ updated
+const staffName        = user?.full_name || user?.name || user?.username || "Staffsss";
+const staffEmail       = user?.email || "—";
+const staffRole        = user?.role  || "Staff";
+const staffCode        = user?.code  || user?.staff_profile?.code || "";
+const staffDesignation = user?.designation || user?.staff_profile?.designation || "";
 
   return (
     <div className="min-h-screen">
@@ -351,25 +364,42 @@ export default function StaffAccountingDashboard() {
           <div className="relative p-4 flex flex-col md:flex-row md:items-center gap-5">
             <div className="flex-1 min-w-0">
               <p className="text-white/65 text-[10px] font-black uppercase tracking-[0.18em] mb-0.5">{greeting()}</p>
-              <h1 className="text-white text-[22px] font-black tracking-tight leading-tight truncate">{staffName}</h1>
+              <h1 className="text-white text-[24px] font-black tracking-tight leading-tight truncate">
+                {loading ? "Loading..." : staffName}
+              </h1>
               <p className="text-white/55 text-[11px] flex items-center gap-1.5 mt-0.5">
                 <Mail size={10} className="shrink-0" />{staffEmail}
               </p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-white/20 backdrop-blur-sm">
-                  {staffRole}
-                </span>
+              <div className="flex items-center gap-7 mt-2 flex-wrap">
+                {/* ✅ updated — shows role + designation + code */}
+<span className="bg-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-white/20 backdrop-blur-sm">
+  {staffRole}
+</span>
+{staffDesignation && (
+  <span className="bg-white/15 text-white/90 text-[10px] font-bold px-3 py-1 rounded-full border border-white/15 capitalize">
+    {staffDesignation}
+  </span>
+)}
+{staffCode && (
+  <span className="bg-white/10 text-white/75 text-[10px] font-mono px-3 py-1 rounded-full border border-white/10 tracking-wider">
+    {staffCode}
+  </span>
+)}
                 {user?.school && (
                   <span className="bg-white/15 text-white/90 text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-white/15">
                     <School size={9} />
                     {typeof user.school === "object" ? user.school?.name : user.school}
                   </span>
                 )}
-                {lastSync && (
-                  <span className="text-white/45 text-[10px] flex items-center gap-1.5">
-                    <Clock size={9} />Synced {lastSync.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                )}
+                <p className="text-[13px] text-white font-medium flex items-center gap-1">
+                  <Clock size={14} className="text-white" />
+                  {/* यहाँ lastSync को सट्टा currentTime प्रयोग गर्नुहोस् */}
+                  {`Time: ${currentTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit", // सेकेन्ड पनि देखाउन चाहनुहुन्छ भने
+                  })}`}
+                </p>
               </div>
             </div>
 
@@ -969,7 +999,11 @@ export default function StaffAccountingDashboard() {
               )}
             </div>
 
-            <DashboardCalendar primaryColor={primaryColor} />
+              <CalendarGrid 
+              selectedMonthIndex={selectedMonthIndex} 
+              setSelectedMonthIndex={setSelectedMonthIndex} 
+              className="bg-white rounded shadow-sm border border-gray-100 p-2 !h-full"
+            />
           </div>
         </div>
 

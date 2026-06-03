@@ -20,6 +20,9 @@ export interface IAuthContext {
 }
 
 export interface IUser {
+  code?:        string;
+  designation?: string;
+  full_name:string;
   email: string;
   name: string;
   role: string; // 'student', 'teacher', 'staff', 'admin' etc.
@@ -63,6 +66,7 @@ export interface IUser {
   staff_profile?: {
     id: string | number;
     designation: string;
+    code?: string;
   };
   photo?: string;
   profile_photo?: string;

@@ -22,6 +22,8 @@ import {
 } from "recharts";
 import useAuth from "@/lib/hooks/useAuth";
 import DashboardCalendar from "@/components/ui/dashboardCalendar";
+import CalendarGrid from "@/components/ui/CalendarGrid";
+import NepaliDate from "nepali-date-converter";
 
 // ─── Backend response types ───────────────────────────────────────────────────
 
@@ -207,7 +209,16 @@ export default function TeacherDashboardPage() {
   const [leaves,        setLeaves]        = useState<any[]>([]);
   const [attendance,    setAttendance]    = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+    const [selectedMonthIndex, setSelectedMonthIndex] = useState(new NepaliDate().getMonth());
+  const [currentTime, setCurrentTime] = useState(new Date());
 
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 1000); // हरेक १ सेकेन्डमा अपडेट हुने
+
+      return () => clearInterval(timer); // कम्पोनेन्ट अनमाउन्ट हुँदा क्लियर गर्ने
+}, []);
   // ─────────────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -348,12 +359,15 @@ export default function TeacherDashboardPage() {
                     {teacherCode}
                   </span>
                 )}
-                {lastSync && (
-                  <span className="text-white/45 text-[10px] flex items-center gap-1.5">
-                    <Clock size={9} />
-                    Synced {lastSync.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                )}
+                     <p className="text-[13px] text-white font-medium flex items-center gap-1">
+                      <Clock size={14} className="text-white" />
+                      {/* यहाँ lastSync को सट्टा currentTime प्रयोग गर्नुहोस् */}
+                      {`Time: ${currentTime.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit", // सेकेन्ड पनि देखाउन चाहनुहुन्छ भने
+                      })}`}
+                    </p>
               </div>
             </div>
 
@@ -827,7 +841,11 @@ export default function TeacherDashboardPage() {
 
             {/* ✅ IMPROVED: Calendar wrapper for consistent rounding */}
             <div className="rounded overflow-hidden shadow-sm border border-gray-100">
-              <DashboardCalendar primaryColor={primaryColor} />
+                 <CalendarGrid 
+              selectedMonthIndex={selectedMonthIndex} 
+              setSelectedMonthIndex={setSelectedMonthIndex} 
+              className="bg-white rounded shadow-sm border border-gray-100 p-2 !h-full"
+            />
             </div>
           </div>
         </div>

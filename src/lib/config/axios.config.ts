@@ -3,14 +3,14 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-  //  const BASE_URL = "https://schoolapi.edifynepal.com/api";
- const BASE_URL = "http://127.0.0.1:8000/api";
+   const BASE_URL = "https://schoolapi.edifynepal.com/api";
+//  const BASE_URL = "http://127.0.0.1:8000/api";
 
 // ==============================
 // 🔐 Private Axios (with token)
 // ==============================
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
     

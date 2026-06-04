@@ -83,7 +83,7 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
       fee_type: null, 
       total_amount: 0, 
       paid_amount: 0,
-      due_date: null,
+      due_date: dayjs().format("YYYY-MM-DD"),
       status: 'unpaid',
       school: "" 
     }
@@ -383,10 +383,14 @@ export default function StudentFeeForm({ initialData, onClose, onSuccess, isOpen
                       control={control} 
                       render={({ field }) => (
                         <div className="w-full relative dynamic-nepali-container [&>.ndp-container]:!z-[9999]">
-                           <CalendarPicker   
-                            value={field.value || ""} 
-                            onChange={(date) => field.onChange(date)}
-                            />
+                          <CalendarPicker 
+                            // यदि field.value छ भने त्यो देखाउने, छैन भने आजको मिति देखाउने
+                            value={field.value ? adToBSValue(field.value) : adToBSValue(dayjs().format("YYYY-MM-DD"))} 
+                            onChange={(bsDate) => {
+                              const adDate = bsToADValue(bsDate); 
+                              field.onChange(adDate); 
+                            }}
+                          />
                         </div>
                       )} 
                     />

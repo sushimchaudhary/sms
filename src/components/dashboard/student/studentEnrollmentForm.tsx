@@ -107,28 +107,41 @@ export default function StudentEnrollmentForm({
 
     calculateNextRoll();
   }, [selectedClass, selectedSection, selectedSession, isUpdate, form]);
-
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [studentRes, sessionRes, classRes, sectionsRes] = await Promise.all([
-          StudentServices.getAllStudents(),
-          SessionServices.getSessions(),
-          ClassServices.getAllClasses(),
-          SectionServices.getAllSections(),
-        ]);
+      const fetchData = async () => {
+        try {
+          const [studentRes, sessionRes, classRes, sectionsRes] = await Promise.all([
+            StudentServices.getAllStudents(),
+            SessionServices.getSessions(),
+            ClassServices.getAllClasses(),
+            SectionServices.getAllSections(),
+          ]);
 
-        setStudents(studentRes.results || studentRes);
-        setSessions(sessionRes.results || sessionRes);
-        setClasses(classRes.results || classRes);
-        setAllSections(sectionsRes.results || sectionsRes);
-      } catch (err) {
-        toast.error("Failed to load dropdown data");
-      }
-    };
+          const studentsData = studentRes.results || studentRes;
+          const sessionsData = sessionRes.results || sessionRes;
+          const classesData = classRes.results || classRes;
+          const sectionsData = sectionsRes.results || sectionsRes;
 
-    if (isOpen) fetchData();
-  }, [isOpen]);
+          setStudents(studentsData);
+          setSessions(sessionsData);
+          setClasses(classesData);
+          setAllSections(sectionsData);
+
+          // --- Session Auto-select Logic ---
+          // यदि यो नयाँ इन्ट्री हो (Edit होइन भने), Active Session छान्नुहोस्
+          if (!initialData) {
+            const activeSession = sessionsData.find((s: any) => s.is_active === true);
+            if (activeSession) {
+              form.setValue("session", activeSession.id);
+            }
+          }
+        } catch (err) {
+          toast.error("Failed to load dropdown data");
+        }
+      };
+
+      if (isOpen) fetchData();
+    }, [isOpen, initialData, form]); // form र initialData पनि dependencies मा राख्नुहोस्
 
   useEffect(() => {
     if (selectedClass) {
@@ -170,15 +183,18 @@ export default function StudentEnrollmentForm({
     }
   }, [initialData, isOpen, loggedInUser, form]);
 
-  const onSubmit = async (values: EnrollmentFormValues) => {
+const onSubmit = async (values: EnrollmentFormValues) => {
     setLoading(true);
+
     
     const payload = {
       ...values,
       school: values.school || (loggedInUser?.school_id ? Number(loggedInUser.school_id) : null),
-      // Backend le auto-generate garna roll_number skip garne ki manually pathaune? 
-      // Safe huna ko lagi frontend le calculate gareko pathauda ramro hunchha
-      roll_number: values.roll_number 
+      roll_number: values.roll_number,
+      student: values.student,
+      session: values.session,
+      class_assigned: values.class_assigned,
+      section: values.section,
     };
 
     try {
@@ -188,17 +204,44 @@ export default function StudentEnrollmentForm({
       } else {
         await EnrollmentServices.createEnrollment(payload);
         toast.success(`Student enrolled with Roll No: ${values.roll_number}`);
+
+        form.reset({
+          student: null,
+          school: loggedInUser?.school_id ? Number(loggedInUser.school_id) : null,
+          session: loggedInUser?.active_session_id || null, // Active session पुनः सेट गर्नुहोस्
+          class_assigned: null,
+          section: null,
+          is_active: true,
+          roll_number: null,
+        });
+        setCalculatedRoll(null); 
       }
-      onSuccess();
-      onClose();
+
+      if (onSuccess) {
+        onSuccess();
+      }
+      
     } catch (err: any) {
-       // ... existing error handling
-       toast.error("Error occurred while saving");
+      const serverErrors = err.response?.data;
+      
+      if (serverErrors) {        if (serverErrors.non_field_errors) {
+          toast.error(serverErrors.non_field_errors[0]);
+        } else if (serverErrors.detail) {
+          toast.error(serverErrors.detail);
+        } else {
+          Object.keys(serverErrors).forEach((key) => {
+            const errorValue = serverErrors[key];
+            const message = Array.isArray(errorValue) ? errorValue[0] : errorValue;
+            toast.error(`${key.toUpperCase()}: ${message}`);
+          });
+        }
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <>
       <div
@@ -310,7 +353,7 @@ export default function StudentEnrollmentForm({
                           {...field}
                           className="w-full h-[33px]"
                           placeholder="Assign Class"
-                          options={classes.map((c: any) => ({
+                          options={[...classes].reverse().map((c: any) => ({
                             value: c.id,
                             label: c.name,
                           }))}

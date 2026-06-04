@@ -62,9 +62,22 @@ export default function SubjectForm({
       } else {
         await SubjectServices.createSubject(values);
         toast.success("Subject created successfully");
+
+         form.reset({
+          name: "",
+          school: loggedInUser?.school_id ? String(loggedInUser.school_id) : "",
+          
+          
+        });
       }
-      onSuccess();
-      onClose();
+        
+
+      
+
+      if (onSuccess) {
+        onSuccess();
+      }
+      // onClose();
     } catch (err: any) {
       const serverErrors = err.response?.data;
       if (serverErrors) {

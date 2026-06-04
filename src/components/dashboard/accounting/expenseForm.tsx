@@ -88,8 +88,22 @@ export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }:
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const sessData = await SessionServices.getSessions();
-        setSessions(sessData.results || sessData);
+
+        const sessionRes = await SessionServices.getSessions();
+                const data = sessionRes.results || sessionRes;
+                setSessions(data);
+        
+       
+        
+        // Naya entry (Create) ko lagi matra auto-select garne
+        if (!initialData) {
+          // 'is_active' field huncha ki hernus, natra 'is_current' hola
+          const currentSession = data.find((s: any) => s.is_active === true); 
+          if (currentSession) {
+            form.setValue("session", currentSession.id);
+          }
+        }
+
       } catch (err) {
         toast.error("Failed to load sessions");
       }
@@ -210,16 +224,8 @@ export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }:
                     <Controller 
                       name="amount" 
                       control={control} 
-                      rules={{ required: "Amount is required" }}
                       render={({ field }) => (
-                        <InputNumber 
-                          {...field} 
-                          className="w-full h-[35px]" 
-                          min={0} 
-                          placeholder="0.00" 
-                          step="0.01" 
-                          stringMode={false}
-                        />
+                        <InputNumber {...field} className="w-full h-[35px]" placeholder="0.00" min={0} />
                       )} 
                     />
                   </FormItem>
@@ -234,13 +240,15 @@ export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }:
                       name="date" 
                       control={control} 
                       render={({ field }) => (
-                        <div className="w-full relative dynamic-nepali-container [&>.ndp-container]:!z-[9999]">
-                          <CalendarPicker   
-                            // value={field.value || ""}
-                             value={field.value ? adToBSValue(field.value) : new NepaliDate().format("YYYY-MM-DD")}  
-                             
-                            onChange={(date) => field.onChange(date)}
-                            />
+                        <div className="w-full relative dynamic-nepali-container">
+                          <CalendarPicker 
+                            value={field.value ? adToBSValue(field.value) : ""} 
+                            onChange={(bsDate) => {
+                              // bsDate (e.g., "2081-02-15") लाई AD मा कन्भर्ट गर्नुहोस्
+                              const adDate = bsToADValue(bsDate); 
+                              field.onChange(adDate); // अब यो "2024-05-28" जस्तो AD format मा जान्छ
+                            }}
+                          />
                         </div>
                       )} 
                     />

@@ -63,21 +63,44 @@ export default function NotesForm({ initialData, onClose, onSuccess, isOpen }: a
   const selectedClass = form.watch("class_id");
 
   // Fetch Options Logic
-  useEffect(() => {
-    const fetchInitialOptions = async () => {
-      try {
-        const [classRes, subjectRes, sessionRes] = await Promise.all([
-          ClassServices.getAllClasses(),
-          SubjectServices.getAllSubjects(),
-          SessionServices.getSessions(),
-        ]);
-        setClasses((classRes?.results || classRes || []).map((c: any) => ({ label: c.name, value: c.id })));
-        setSubjects((subjectRes?.results || subjectRes || []).map((s: any) => ({ label: s.name, value: s.id })));
-        setSessions((sessionRes?.results || sessionRes || []).map((sn: any) => ({ label: sn.name, value: sn.id })));
-      } catch (err) { console.error("Error fetching options:", err); }
-    };
-    if (isOpen) fetchInitialOptions();
-  }, [isOpen]);
+// Fetch Options Logic
+useEffect(() => {
+  const fetchInitialOptions = async () => {
+    try {
+      const [classRes, subjectRes, sessionRes] = await Promise.all([
+        ClassServices.getAllClasses(),
+        SubjectServices.getAllSubjects(),
+        SessionServices.getSessions(),
+      ]);
+
+      const classesData = (classRes?.results || classRes || []);
+      const subjectsData = (subjectRes?.results || subjectRes || []);
+      const sessionsData = (sessionRes?.results || sessionRes || []);
+
+      setClasses(classesData.map((c: any) => ({ label: c.name, value: c.id })));
+      setSubjects(subjectsData.map((s: any) => ({ label: s.name, value: s.id })));
+      setSessions(sessionsData.map((sn: any) => ({ label: sn.name, value: sn.id })));
+
+      // अटो-सेलेक्ट लोजिक: नयाँ Note बनाउँदा मात्र
+      if (!initialData) {
+        // १. API बाट 'is_active' सेसन खोज्ने
+        const activeSession = sessionsData.find((s: any) => s.is_active === true);
+        
+        if (activeSession) {
+          form.setValue("session_id", activeSession.id);
+        } 
+        // २. यदि API मा छैन भने, लगइन युजरको active_session_id प्रयोग गर्ने
+        else if (loggedInUser?.active_session_id) {
+          form.setValue("session_id", loggedInUser.active_session_id);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching options:", err);
+    }
+  };
+
+  if (isOpen) fetchInitialOptions();
+}, [isOpen, initialData, form, loggedInUser]);
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -218,7 +241,7 @@ export default function NotesForm({ initialData, onClose, onSuccess, isOpen }: a
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <FormFieldControl form={form} name="class_id" label="Class" type="select" icon={<GraduationCap size={12} />} placeholder="Select Class" options={classes} />
+                  <FormFieldControl form={form} name="class_id" label="Class" type="select" icon={<GraduationCap size={12} />} placeholder="Select Class" options={[...classes].reverse()} />
                   <FormFieldControl form={form} name="section_id" label="Section" type="select" icon={<Layers size={12} />} placeholder="Select Section" options={sections} disabled={!selectedClass} />
                   <FormFieldControl form={form} name="subject_id" label="Subject" type="select" icon={<BookOpen size={12} />} placeholder="Select Subject" options={subjects} />
                 </div>

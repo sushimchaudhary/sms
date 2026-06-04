@@ -24,6 +24,7 @@ import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { FeeServices } from "@/services/feeServices";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
+import NepaliDate from "nepali-date-converter";
 
 interface StudentFee {
   id: string | number;
@@ -49,36 +50,15 @@ interface StudentFeeTableProps {
 
 const PAGE_SIZE = 20;
 
-// ── सादा र सटिक AD to BS कन्भर्टर हेल्पर (Zero Dependency) ─────────────────────────────
 const convertADtoBS = (adDateString: string): string => {
   if (!adDateString) return "N/A";
   try {
-    const date = new Date(adDateString);
-    if (isNaN(date.getTime())) return adDateString;
-
-    const adYear = date.getFullYear();
-    const adMonth = date.getMonth() + 1;
-    const adDay = date.getDate();
-
-    // सामान्यतया नेपाली क्यालेन्डर AD भन्दा ५६ वर्ष ८ महिना १५ दिन अगाडि हुन्छ
-    let bsYear = adYear + 56;
-    let bsMonth = adMonth + 8;
-    let bsDay = adDay + 15;
-
-    // महिना र दिन संरचना मिलान
-    if (bsDay > 30) {
-      bsDay -= 30;
-      bsMonth += 1;
-    }
-    if (bsMonth > 12) {
-      bsMonth -= 12;
-      bsYear += 1;
-    }
-
-    const pad = (num: number) => String(num).padStart(2, "0");
-    return `${bsYear}-${pad(bsMonth)}-${pad(bsDay)}`;
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   } catch (error) {
-    console.error("Date conversion error:", error);
     return adDateString;
   }
 };
@@ -154,7 +134,7 @@ const StudentFeeTable = ({
     doc.setFontSize(16);
     doc.text("Student Fee Report", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Page: ${currentPage} | Date: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(`Page: ${currentPage} | Date: ${formatToNepaliBS(new Date().toISOString())}`, 14, 22);
 
     const tableData = paginatedItems.map((item, index) => [
       (currentPage - 1) * PAGE_SIZE + index + 1,
@@ -162,11 +142,12 @@ const StudentFeeTable = ({
       item.fee_type_name,
       `Rs. ${item.total_amount}`,
       `Rs. ${item.paid_amount}`,
-      item.status.toUpperCase()
+      item.status.toUpperCase(),
+      formatToNepaliBS(item.due_date)
     ]);
 
     autoTable(doc, {
-      head: [["S.N.", "Student", "Fee Type", "Total", "Paid", "Status"]],
+      head: [["S.N.", "Student", "Fee Type", "Total", "Paid", "Status", "Due Date"]],
       body: tableData,
       startY: 28,
       styles: { fontSize: 9 },
@@ -185,6 +166,7 @@ const StudentFeeTable = ({
         <td>${item.fee_type_name}</td>
         <td>Rs. ${item.total_amount}</td>
         <td>${item.status.toUpperCase()}</td>
+        <td>${formatToNepaliBS(item.due_date)}</td>
       </tr>
     `).join("");
 
@@ -214,6 +196,7 @@ const StudentFeeTable = ({
                   <th>Fee Type</th>
                   <th>Total Amount</th>
                   <th>Status</th>
+                  <th>Due Date</th>
                 </tr>
               </thead>
               <tbody>${printContent}</tbody>
@@ -341,7 +324,7 @@ const StudentFeeTable = ({
                       </td>
                       <td className="px-6 py-2">
                         <div className="flex items-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
-                          <CalendarClock size={11} /> {(item.due_date)}
+                          <CalendarClock size={11} /> {(formatToNepaliBS(item.due_date))}
                         </div>
                       </td>
                       <td className="px-6 py-2 text-center">

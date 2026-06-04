@@ -47,11 +47,21 @@ export default function FeeStructureForm({ initialData, onClose, onSuccess, isOp
           ClassServices.getAllClasses(),
           FeeServices.getAllFeeTypes(), // FeeType fetch garne service
         ]);
+        const sessionsData = ses.results || ses;
+        const classesData = cls.results || cls;
+        const feeTypesData = fType.results || fType;
         setOptions({
-          sessions: ses.results || ses,
-          classes: cls.results || cls,
-          feeTypes: fType.results || fType,
+          sessions: sessionsData,
+          classes: classesData,
+          feeTypes: feeTypesData,
         });
+
+        if (!initialData) {
+        const activeSession = sessionsData.find((s: any) => s.is_active === true);
+        if (activeSession) {
+          form.setValue("session", activeSession.id);
+        }
+      }
       } catch (err) {
         toast.error("Failed to load dependency data");
       }
@@ -117,7 +127,7 @@ export default function FeeStructureForm({ initialData, onClose, onSuccess, isOp
                     <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2"><Layers size={12} /> Class</label>
                     <Controller name="class_assigned" control={form.control} render={({ field }) => (
                       <Select {...field} className="w-full h-[33px]" placeholder="Select Class"
-                        options={options.classes.map((c: any) => ({ value: c.id, label: c.name }))} />
+                        options={[...options.classes].reverse().map((c: any) => ({ value: c.id, label: c.name }))} />
                     )} />
                   </FormItem>
                 </div>

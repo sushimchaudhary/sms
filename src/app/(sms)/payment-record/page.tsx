@@ -31,10 +31,10 @@ export default function PaymentPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <PageHeader
-          title="Fee Collection & Payments"
+          title="Fee Collection & PR"
           description="Manage and track all student fee payments and collection history."
         />
-        
+
         <div className="flex items-center gap-3">
           {/* Search Input */}
           <div className="relative">

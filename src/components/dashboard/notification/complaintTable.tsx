@@ -31,6 +31,7 @@ import ConfirmModal from "../../delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { ComplaintServices } from "@/services/notificationServices";
 import ComplaintDetailModal from "@/components/ui/complaintModel";
+import NepaliDate from "nepali-date-converter";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type ComplaintStatus = "pending" | "in_review" | "resolved" | "rejected";
@@ -60,6 +61,20 @@ interface ComplaintTableProps {
   refreshTrigger: number;
   searchQuery?: string;
 }
+
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
 
 const PAGE_SIZE = 20;
 
@@ -121,6 +136,9 @@ const ComplaintTable = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [detailModal, setDetailModal] = useState<Complaint | null>(null);
+   const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
 
   // --- Fetch ---
   const fetchComplaints = async () => {
@@ -182,7 +200,7 @@ const ComplaintTable = ({
       item.status,
       item.response ? "Yes" : "No",
       item.reviewed_at
-        ? new Date(item.reviewed_at).toLocaleDateString()
+        ? formatToNepaliBS(item.reviewed_at)
         : "—",
     ]);
     autoTable(doc, {
@@ -207,7 +225,7 @@ const ComplaintTable = ({
         <td>${resolveRaisedBy(item)}</td>
         <td>${item.status}</td>
         <td>${item.response ? "Yes" : "No"}</td>
-        <td>${item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString() : "—"}</td>
+        <td>${item.reviewed_at ? formatToNepaliBS(item.reviewed_at) : "—"}</td>
       </tr>
     `
       )
@@ -416,11 +434,7 @@ const ComplaintTable = ({
                             {item.reviewed_at && (
                               <span className="text-[10px] text-[#8094ae] flex items-center gap-1">
                                 <CalendarDays size={10} />
-                                {new Date(item.reviewed_at).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
+                                {formatToNepaliBS(item.reviewed_at)}
                               </span>
                             )}
                           </div>

@@ -43,19 +43,30 @@ export default function ClassForm({
     },
   });
 
-  // Fetch Sessions for dropdown
+ // Fetch Sessions and set default if creating new
   useEffect(() => {
     const fetchData = async () => {
       try {
         const sessionRes = await SessionServices.getSessions();
-        setSessions(sessionRes.results || sessionRes);
+        const data = sessionRes.results || sessionRes;
+        setSessions(data);
+
+        // Naya entry (Create) ko lagi matra auto-select garne
+        if (!initialData) {
+          // 'is_active' field huncha ki hernus, natra 'is_current' hola
+          const currentSession = data.find((s: any) => s.is_active === true); 
+          if (currentSession) {
+            form.setValue("session", currentSession.id);
+          }
+        }
       } catch (err) {
         console.error("Session fetch error:", err);
         toast.error("Failed to load sessions");
       }
     };
     if (isOpen) fetchData();
-  }, [isOpen]);
+  }, [isOpen, initialData, form]);
+  
 
   // Handle Form Reset / Initial Data
   useEffect(() => {
@@ -85,9 +96,17 @@ export default function ClassForm({
       } else {
         await ClassServices.createClass(values);
         toast.success("Class created successfully");
+
+        form.reset({
+          name: "",
+          school: loggedInUser?.school_id ? String(loggedInUser.school_id) : "",
+          session: null,
+        });
       }
-      onSuccess();
-      onClose();
+      if (onSuccess) {
+        onSuccess();
+      }
+      // onClose();
     } catch (err: any) {
       const serverErrors = err.response?.data;
       if (serverErrors) {

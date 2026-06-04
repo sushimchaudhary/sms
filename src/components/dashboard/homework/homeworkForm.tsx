@@ -32,15 +32,19 @@ import { SectionServices } from "@/services/sectionServices";
 import { SessionServices } from "@/services/sessionsServices";
 
 import NepaliDate from "nepali-date-converter";
-// ─── install: npm install nepali-datepicker-reactjs ───
-import { NepaliDatePicker } from "nepali-datepicker-reactjs";
 import "nepali-datepicker-reactjs/dist/index.css";
+import CalendarPicker from "@/components/ui/Calendar";
 
 // ── Helpers ──────────────────────────────────────────────
 
 /** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" (for the picker value) */
-const adToBSValue = (adStr: string): string => {
-  if (!adStr) return "";
+/** AD "YYYY-MM-DD" → BS "YYYY-MM-DD" */
+const adToBSValue = (adInput: string | dayjs.Dayjs | null | undefined): string => {
+  if (!adInput) return "";
+  
+  // यदि इनपुट dayjs अब्जेक्ट हो भने स्ट्रिङमा बदल्नुहोस्
+  const adStr = dayjs.isDayjs(adInput) ? adInput.format("YYYY-MM-DD") : String(adInput);
+  
   try {
     const nd = new NepaliDate(new Date(adStr));
     const y = nd.getYear();
@@ -102,27 +106,49 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
       teacher: null,
       title: "",
       description: "",
-      due_date: null,
+      due_date: dayjs().format("YYYY-MM-DD"),
     },
   });
 
   const selectedClass = form.watch("class_assigned");
 
-  useEffect(() => {
-    const fetchInitialOptions = async () => {
-      try {
-        const [classRes, subjectRes, sessionRes] = await Promise.all([
-          ClassServices.getAllClasses(),
-          SubjectServices.getAllSubjects(),
-          SessionServices.getSessions()
-        ]);
-        setClasses((classRes?.results || classRes || []).map((c: any) => ({ label: c.name, value: c.id })));
-        setSubjects((subjectRes?.results || subjectRes || []).map((s: any) => ({ label: s.name, value: s.id })));
-        setSessions((sessionRes?.results || sessionRes || []).map((sn: any) => ({ label: sn.name, value: sn.id })));
-      } catch (err) { console.error(err); }
-    };
-    if (isOpen) fetchInitialOptions();
-  }, [isOpen]);
+useEffect(() => {
+  const fetchInitialOptions = async () => {
+    try {
+      // १. सबै डेटा एकैचोटि लोड गर्ने
+      const [classRes, subjectRes, sessionRes] = await Promise.all([
+        ClassServices.getAllClasses(),
+        SubjectServices.getAllSubjects(),
+        SessionServices.getSessions()
+      ]);
+
+      // २. डेटा सेट गर्ने
+      const classData = (classRes?.results || classRes || []);
+      const subjectData = (subjectRes?.results || subjectRes || []);
+      const sessionData = (sessionRes?.results || sessionRes || []);
+
+      setClasses(classData.map((c: any) => ({ label: c.name, value: c.id })));
+      setSubjects(subjectData.map((s: any) => ({ label: s.name, value: s.id })));
+      setSessions(sessionData.map((sn: any) => ({ label: sn.name, value: sn.id })));
+
+      // ३. नयाँ entry को लागि मात्र session अटो-सेलेक्ट गर्ने
+      if (!initialData) {
+        // यहाँ 'is_active' वा 'is_current' कुन प्रयोग हुन्छ, त्यो अनुसार मिलाउनुहोस्
+        const currentSession = sessionData.find((s: any) => s.is_active === true || s.is_current === true);
+        if (currentSession) {
+          form.setValue("session", currentSession.id);
+        } else if (loggedInUser?.active_session_id) {
+          // यदि API मा active_session छैन भने, loggedInUser बाट लिने
+          form.setValue("session", loggedInUser.active_session_id);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching options:", err);
+    }
+  };
+
+  if (isOpen) fetchInitialOptions();
+}, [isOpen, initialData, form, loggedInUser]);
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -158,7 +184,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
           teacher: initialData.teacher?.id || initialData.teacher || null,
           title: initialData.title || "",
           description: initialData.description || "",
-          due_date: initialData.due_date ? dayjs(initialData.due_date).format("YYYY-MM-DD") : null,
+          due_date: initialData?.due_date ? dayjs(initialData.due_date).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
         });
 
         if (initialData.file) {
@@ -179,7 +205,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
           teacher: loggedInUser?.teacher_profile_id || null,
           title: "",
           description: "",
-          due_date: null,
+          due_date: dayjs().format("YYYY-MM-DD"),
         });
         setFileList([]);
       }
@@ -203,8 +229,7 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
     });
 
     if (values.due_date) {
-      formData.append("due_date", dayjs(values.due_date).format("YYYY-MM-DD"));
-    }
+formData.append("due_date", values.due_date ? dayjs(values.due_date).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"));    }
 
     if (fileList[0]?.originFileObj) {
       formData.append("file", fileList[0].originFileObj);
@@ -277,12 +302,23 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
               <form onSubmit={form.handleSubmit(onSubmit)} className="px-4 sm:px-6 py-3 space-y-4 overflow-y-visible form-scroller flex-1">
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <FormFieldControl form={form} name="class_assigned" label="Class" type="select" icon={<Layers size={12} />} placeholder="Select Class" options={classes} primaryColor={primaryColor} />
+                  <FormFieldControl form={form} name="session" label="Session" type="select" icon={<Calendar size={12} />} options={sessions} primaryColor={primaryColor} />
+                  <FormFieldControl 
+                    form={form} 
+                    name="class_assigned" 
+                    label="Class" 
+                    type="select" 
+                    icon={<Layers size={12} />} 
+                    placeholder="Select Class" 
+                    options={[...classes].reverse()} // यहाँ reverse थप्नुहोस्
+                    primaryColor={primaryColor} 
+                  />
                   <FormFieldControl form={form} name="section" label="Section" type="select" icon={<Users size={12} />} placeholder="Select Section" options={sections} primaryColor={primaryColor} />
-                  <FormFieldControl form={form} name="subject" label="Subject" type="select" icon={<GraduationCap size={12} />} placeholder="Select Subject" options={subjects} primaryColor={primaryColor} />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormFieldControl form={form} name="subject" label="Subject" type="select" icon={<GraduationCap size={12} />} placeholder="Select Subject" options={subjects} primaryColor={primaryColor} />
+
                   <FormFieldControl form={form} name="title" label="Homework Title" icon={<Type size={12} />} placeholder="Enter title" />
                   
                   <FormItem className="w-full">
@@ -294,13 +330,12 @@ export default function HomeworkForm({ initialData, onClose, onSuccess, isOpen }
                       control={form.control} 
                       render={({ field }) => (
                         <div className="w-full relative">
-                          <NepaliDatePicker
-                            inputClassName="w-full h-[33px] px-3 py-1.5 text-sm text-gray-800 bg-white border border-gray-300 rounded shadow-xs focus:border-blue-500 focus:outline-hidden transition-all placeholder:text-gray-400 font-sans"
-                            value={adToBSValue(field.value ? dayjs(field.value).format("YYYY-MM-DD") : "")}
-                            onChange={(bsVal: string) => field.onChange(bsToADValue(bsVal))}
-                            options={{
-                              calenderLocale: "ne",
-                              valueLocale: "en",
+                          <CalendarPicker 
+                            // यदि field.value छ भने त्यो देखाउने, छैन भने आजको मिति देखाउने
+                            value={field.value ? adToBSValue(field.value) : adToBSValue(dayjs().format("YYYY-MM-DD"))} 
+                            onChange={(bsDate) => {
+                              const adDate = bsToADValue(bsDate); 
+                              field.onChange(adDate); 
                             }}
                           />
                         </div>

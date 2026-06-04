@@ -33,6 +33,7 @@ export default function SectionForm({ initialData, onClose, onSuccess, isOpen }:
     },
   });
 
+ // Fetch Sessions/Classes and set default session
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -40,14 +41,23 @@ export default function SectionForm({ initialData, onClose, onSuccess, isOpen }:
           SessionServices.getSessions(),
           ClassServices.getAllClasses(),
         ]);
-        setSessions(sessionRes.results || sessionRes);
+        const sessionData = sessionRes.results || sessionRes;
+        setSessions(sessionData);
         setClasses(classRes.results || classRes);
+
+        // Naya entry ko lagi active session set garne
+        if (!initialData) {
+          const currentSession = sessionData.find((s: any) => s.is_active === true);
+          if (currentSession) {
+            form.setValue("session", currentSession.id);
+          }
+        }
       } catch (err) {
         toast.error("Failed to load dependency data");
       }
     };
     if (isOpen) fetchData();
-  }, [isOpen]);
+  }, [isOpen, initialData, form]);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,9 +79,21 @@ export default function SectionForm({ initialData, onClose, onSuccess, isOpen }:
       } else {
         await SectionServices.createSection(values);
         toast.success("Section created successfully");
+
+        form.reset({
+          name: "",
+          school: loggedInUser?.school_id ? String(loggedInUser.school_id) : "",
+          session: null,
+          class_assigned: null,
+        });
+
       }
-      onSuccess();
-      onClose();
+
+      if (onSuccess) {
+        onSuccess();
+      }
+      // onSuccess();
+      // onClose();
     } catch (err: any) {
       toast.error("Error saving section data");
     } finally {
@@ -110,7 +132,14 @@ export default function SectionForm({ initialData, onClose, onSuccess, isOpen }:
                   <FormItem>
                     <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2"><Layers size={12} /> Assign Class</label>
                     <Controller name="class_assigned" control={form.control} render={({ field }) => (
-                      <Select {...field} className="w-full h-[35px]" options={classes.map((c: any) => ({ value: c.id, label: c.name }))} />
+                     <Select 
+                      {...field} 
+                      className="w-full h-[35px]" 
+                      options={[...classes].reverse().map((c: any) => ({ 
+                        value: c.id, 
+                        label: c.name 
+                      }))} 
+                    />
                     )} />
                   </FormItem>
                 </div>

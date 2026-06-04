@@ -24,6 +24,7 @@ import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { FeeServices } from "@/services/feeServices";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { ThemedButton } from "@/components/ui/themedButton";
+import NepaliDate from "nepali-date-converter";
 
 
 interface Payment {
@@ -42,36 +43,15 @@ interface PaymentTableProps {
   searchQuery?: string;
 }
 
-// ── सादा र सटिक AD to BS कन्भर्टर हेल्पर (Zero Dependency) ─────────────────────────────
 const convertADtoBS = (adDateString: string): string => {
   if (!adDateString) return "N/A";
   try {
-    const date = new Date(adDateString);
-    if (isNaN(date.getTime())) return adDateString;
-
-    const adYear = date.getFullYear();
-    const adMonth = date.getMonth() + 1;
-    const adDay = date.getDate();
-
-    // सामान्यतया नेपाली क्यालेन्डर AD भन्दा ५६ वर्ष ८ महिना १५ दिन अगाडि हुन्छ
-    let bsYear = adYear + 56;
-    let bsMonth = adMonth + 8;
-    let bsDay = adDay + 15;
-
-    // महिना र दिन संरचना मिलान
-    if (bsDay > 30) {
-      bsDay -= 30;
-      bsMonth += 1;
-    }
-    if (bsMonth > 12) {
-      bsMonth -= 12;
-      bsYear += 1;
-    }
-
-    const pad = (num: number) => String(num).padStart(2, "0");
-    return `${bsYear}-${pad(bsMonth)}-${pad(bsDay)}`;
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   } catch (error) {
-    console.error("Date conversion error:", error);
     return adDateString;
   }
 };

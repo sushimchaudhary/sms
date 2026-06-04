@@ -24,6 +24,23 @@ import ConfirmModal from "../../delete/confirmModel";
 import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { ThemedButton } from "@/components/ui/themedButton";
 import { NotesServices } from "@/services/noteServices";
+import NepaliDate from "nepali-date-converter";
+
+
+
+const convertADtoBS = (adDateString: string): string => {
+  if (!adDateString) return "N/A";
+  try {
+    const nd = new NepaliDate(new Date(adDateString));
+    const y = nd.getYear();
+    const m = String(nd.getMonth() + 1).padStart(2, "0");
+    const d = String(nd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return adDateString;
+  }
+};
+
 
 const PAGE_SIZE = 20;
 
@@ -37,6 +54,10 @@ export default function NotesTable({ onEdit, refreshTrigger, searchQuery = "" }:
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+
+     const formatToNepaliBS = (adDateString: string) => {
+    return convertADtoBS(adDateString);
+  };
   // ── Fetch Logic ──────────────────────────────────────────────────────────
   const fetchNotes = async () => {
     try {
@@ -87,7 +108,7 @@ export default function NotesTable({ onEdit, refreshTrigger, searchQuery = "" }:
       item.title,
       `${item.class_name} (${item.section_name})`,
       item.subject_name,
-      item.uploaded_at ? dayjs(item.uploaded_at).format("DD MMM, YYYY") : "N/A",
+      item.uploaded_at ? formatToNepaliBS(item.uploaded_at) : "N/A",
     ]);
 
     autoTable(doc, {
@@ -109,7 +130,7 @@ export default function NotesTable({ onEdit, refreshTrigger, searchQuery = "" }:
         <td>${item.title}</td>
         <td>${item.class_name} (${item.section_name})</td>
         <td>${item.subject_name}</td>
-        <td>${item.uploaded_at ? dayjs(item.uploaded_at).format("DD MMM, YYYY") : "N/A"}</td>
+        <td>${item.uploaded_at ? formatToNepaliBS(item.uploaded_at) : "N/A"}</td>
       </tr>
     `).join("");
 
@@ -244,7 +265,7 @@ export default function NotesTable({ onEdit, refreshTrigger, searchQuery = "" }:
                         <div className="flex items-center gap-2 text-[#526484]">
                           <Calendar size={13} className="text-slate-400" />
                           <span className="text-[11px]">
-                            {item.uploaded_at ? dayjs(item.uploaded_at).format("DD MMM, YYYY") : "N/A"}
+                            {item.uploaded_at ? formatToNepaliBS(item.uploaded_at) : "N/A"}
                           </span>
                         </div>
                       </td>

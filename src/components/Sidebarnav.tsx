@@ -104,7 +104,6 @@ const SCHOOL_ADMIN_MENU: MenuItem[] = [
     submenu: [
       { labelKey: "nav.teachers",     href: "/teacher",       icon: GraduationCap },
       { labelKey: "nav.staffMembers", href: "/staff",         icon: ShieldCheck },
-      { labelKey: "nav.leaveAllocation",       href: "/leave-allocation",         icon: User },
       { labelKey: "nav.parents",      href: "/parent",        icon: Users },
       { labelKey: "nav.students",     href: "/student",       icon: BookOpen },
     ],
@@ -142,8 +141,26 @@ const SCHOOL_ADMIN_MENU: MenuItem[] = [
       { labelKey: "nav.notes",     href: "/notes",    icon: BookOpen },
     ],
   },
-  { icon: CalendarDays, labelKey: "nav.leaveApplication", href: "/leave-application" },
-   { icon: Calendar, labelKey: "nav.academicCalendar", href: "/academic-calendar" },
+
+   {
+  icon: CalendarDays, 
+  labelKey: "nav.leaveManagement", 
+  href: "#",
+  submenu: [
+    { 
+      labelKey: "nav.leaveAllocation", 
+      href: "/leave-allocation", 
+      icon: User 
+    },
+    { 
+      labelKey: "nav.leaveApplication", 
+      href: "/leave-application", 
+      icon: CalendarDays 
+    },
+    
+  ],
+},
+{ icon: Calendar, labelKey: "nav.academicCalendar", href: "/academic-calendar" },
 
   {
     icon: Bell,

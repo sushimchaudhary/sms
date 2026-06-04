@@ -3,9 +3,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import {
-  User, Save, Loader2, Mail, Lock, UserCircle,
-  Eye, EyeOff, Camera, Phone, Plus, Trash2, ChevronRight,
-  ChevronLeft, CheckCircle, Users, Calendar,
+  User,
+  Save,
+  Loader2,
+  Mail,
+  Lock,
+  UserCircle,
+  Eye,
+  EyeOff,
+  Camera,
+  Phone,
+  Plus,
+  Trash2,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle,
+  Users,
+  Calendar,
 } from "lucide-react";
 import { Form, FormItem } from "@/components/ui/form";
 import { ThemedButton } from "@/components/ui/themedButton";
@@ -55,7 +69,9 @@ const adToBSValue = (adStr: string): string => {
   try {
     const nd = new NepaliDate(new Date(adStr));
     return `${nd.getYear()}-${String(nd.getMonth() + 1).padStart(2, "0")}-${String(nd.getDate()).padStart(2, "0")}`;
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
 };
 
 const bsToADValue = (bsStr: string): string => {
@@ -64,7 +80,9 @@ const bsToADValue = (bsStr: string): string => {
     const [y, m, d] = bsStr.split("-").map(Number);
     const ad = new NepaliDate(y, m - 1, d).toJsDate();
     return `${ad.getFullYear()}-${String(ad.getMonth() + 1).padStart(2, "0")}-${String(ad.getDate()).padStart(2, "0")}`;
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -96,18 +114,30 @@ export default function AdmissionFormInline({
   const [loading, setLoading] = useState(false);
 
   // ── Dropdown data (fetched on mount) ─────────────────────────────────────
-  const [sessions, setSessions] = useState<{ id: number | string; name: string }[]>([]);
-  const [classes, setClasses] = useState<{ id: number | string; name: string }[]>([]);
-  const [sections, setSections] = useState<{ id: number | string; name: string }[]>([]);
+  const [sessions, setSessions] = useState<
+    { id: number | string; name: string }[]
+  >([]);
+  const [classes, setClasses] = useState<
+    { id: number | string; name: string }[]
+  >([]);
+  const [sections, setSections] = useState<
+    { id: number | string; name: string }[]
+  >([]);
   const [dropdownLoading, setDropdownLoading] = useState(false);
 
   // ── Photo states ──────────────────────────────────────────────────────────
-  const [parentPhotoPreview, setParentPhotoPreview] = useState<string | null>(null);
-  const [studentPhotoPreviews, setStudentPhotoPreviews] = useState<(string | null)[]>([null]);
+  const [parentPhotoPreview, setParentPhotoPreview] = useState<string | null>(
+    null,
+  );
+  const [studentPhotoPreviews, setStudentPhotoPreviews] = useState<
+    (string | null)[]
+  >([null]);
 
   const parentPhotoRef = useRef<HTMLInputElement>(null);
   // Stable ref object keyed by student index — fixes clickable issue
-  const studentPhotoInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+  const studentPhotoInputRefs = useRef<{
+    [key: number]: HTMLInputElement | null;
+  }>({});
 
   const form = useForm<AdmissionFormValues>({
     defaultValues: {
@@ -171,21 +201,30 @@ export default function AdmissionFormInline({
   const handleParentPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
     form.setValue("parent_photo", file);
     const reader = new FileReader();
     reader.onloadend = () => setParentPhotoPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
-  const handleStudentPhoto = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleStudentPhoto = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
     form.setValue(`students.${index}.photo`, file);
     const reader = new FileReader();
     reader.onloadend = () => {
-      setStudentPhotoPreviews(prev => {
+      setStudentPhotoPreviews((prev) => {
         const next = [...prev];
         next[index] = reader.result as string;
         return next;
@@ -202,8 +241,11 @@ export default function AdmissionFormInline({
 
   const handleNextStep = async () => {
     const ok = await form.trigger([
-      "parent_first_name", "parent_last_name",
-      "parent_email", "parent_phone", "parent_password",
+      "parent_first_name",
+      "parent_last_name",
+      "parent_email",
+      "parent_phone",
+      "parent_password",
     ]);
     if (!ok) return;
     setStep(2);
@@ -216,7 +258,10 @@ export default function AdmissionFormInline({
     try {
       const userInfoCookie = cookies.get("user_info");
       const cookieUser = userInfoCookie ? JSON.parse(userInfoCookie) : null;
-      const schoolId = loggedInUser?.school_id || loggedInUser?.school || cookieUser?.school_id;
+      const schoolId =
+        loggedInUser?.school_id ||
+        loggedInUser?.school ||
+        cookieUser?.school_id;
 
       const payload: any = {
         parent: {
@@ -250,7 +295,8 @@ export default function AdmissionFormInline({
       if (serverErrors && typeof serverErrors === "object") {
         Object.entries(serverErrors).forEach(([key, val]) => {
           const msg = Array.isArray(val) ? val[0] : val;
-          const label = key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
+          const label =
+            key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
           toast.error(`${label}: ${msg}`);
         });
       } else {
@@ -261,84 +307,85 @@ export default function AdmissionFormInline({
     }
   };
 
+  const onSubmit = async (values: AdmissionFormValues) => {
+    setLoading(true);
+    try {
+      const userInfoCookie = cookies.get("user_info");
+      const cookieUser = userInfoCookie ? JSON.parse(userInfoCookie) : null;
+      const schoolId =
+        loggedInUser?.school_id ||
+        loggedInUser?.school ||
+        cookieUser?.school_id;
 
-const onSubmit = async (values: AdmissionFormValues) => {
-  setLoading(true);
-  try {
-    const userInfoCookie = cookies.get("user_info");
-    const cookieUser = userInfoCookie ? JSON.parse(userInfoCookie) : null;
-    const schoolId = loggedInUser?.school_id || loggedInUser?.school || cookieUser?.school_id;
+      // १. ब्याकइन्डले खोजे अनुसार छुट्टाछुट्टै parent र students अब्जेक्ट बनाउने
+      const parentPayload = {
+        email: values.parent_email,
+        first_name: values.parent_first_name,
+        last_name: values.parent_last_name,
+        phone: values.parent_phone,
+        password: values.parent_password,
+        school_id: schoolId,
+      };
 
-    // १. ब्याकइन्डले खोजे अनुसार छुट्टाछुट्टै parent र students अब्जेक्ट बनाउने
-    const parentPayload = {
-      email: values.parent_email,
-      first_name: values.parent_first_name,
-      last_name: values.parent_last_name,
-      phone: values.parent_phone,
-      password: values.parent_password,
-      school_id: schoolId,
-    };
+      const studentsPayload = values.students.map((s) => ({
+        email: s.email,
+        first_name: s.first_name,
+        last_name: s.last_name,
+        password: s.password,
+        dob: s.dob || null,
+        gender: s.gender || null,
+        session_id: s.session_id,
+        class_id: s.class_id,
+        section_id: s.section_id,
+        school_id: schoolId,
+      }));
 
-    const studentsPayload = values.students.map((s) => ({
-      email: s.email,
-      first_name: s.first_name,
-      last_name: s.last_name,
-      password: s.password,
-      dob: s.dob || null,
-      gender: s.gender || null,
-      session_id: s.session_id,
-      class_id: s.class_id,
-      section_id: s.section_id,
-      school_id: schoolId,
-    }));
+      const formData = new FormData();
 
-    const formData = new FormData();
+      // २. ब्याकइन्डको json.loads() ले चिन्ने गरी छुट्टाछुट्टै stringify गरेर एपेन्ड गर्ने
+      formData.append("parent", JSON.stringify(parentPayload));
+      formData.append("students", JSON.stringify(studentsPayload));
 
-    // २. ब्याकइन्डको json.loads() ले चिन्ने गरी छुट्टाछुट्टै stringify गरेर एपेन्ड गर्ने
-    formData.append("parent", JSON.stringify(parentPayload));
-    formData.append("students", JSON.stringify(studentsPayload));
-
-    // ३. Parent को फोटो एपेन्ड गर्ने (ब्याकइन्डको request.FILES.get("parent_photo") को लागि)
-    if (values.parent_photo) {
-      formData.append("parent_photo", values.parent_photo);
-    }
-
-    // ४. प्रत्येक Student को फोटो एपेन्ड गर्ने (student_photo_0, student_photo_1 फर्म्याटमा)
-    values.students.forEach((s, i) => {
-      if (s.photo) {
-        formData.append(`student_photo_${i}`, s.photo);
+      // ३. Parent को फोटो एपेन्ड गर्ने (ब्याकइन्डको request.FILES.get("parent_photo") को लागि)
+      if (values.parent_photo) {
+        formData.append("parent_photo", values.parent_photo);
       }
-    });
 
-    // ५. API Call मा formData पठाउने
-    await AdmissionServices.createAdmission(formData);
-    
-    toast.success("Admission completed successfully!");
-    resetForm();
-    onSuccess?.();
-  } catch (err: any) {
-    const serverErrors = err.response?.data;
-    if (serverErrors && typeof serverErrors === "object") {
-      Object.entries(serverErrors).forEach(([key, val]) => {
-        const msg = Array.isArray(val) ? val[0] : val;
-        const label = key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
-        toast.error(`${label}: ${msg}`);
+      // ४. प्रत्येक Student को फोटो एपेन्ड गर्ने (student_photo_0, student_photo_1 फर्म्याटमा)
+      values.students.forEach((s, i) => {
+        if (s.photo) {
+          formData.append(`student_photo_${i}`, s.photo);
+        }
       });
-    } else {
-      toast.error("Network error. Please check your connection.");
+
+      // ५. API Call मा formData पठाउने
+      await AdmissionServices.createAdmission(formData);
+
+      toast.success("Admission completed successfully!");
+      resetForm();
+      onSuccess?.();
+    } catch (err: any) {
+      const serverErrors = err.response?.data;
+      if (serverErrors && typeof serverErrors === "object") {
+        Object.entries(serverErrors).forEach(([key, val]) => {
+          const msg = Array.isArray(val) ? val[0] : val;
+          const label =
+            key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ");
+          toast.error(`${label}: ${msg}`);
+        });
+      } else {
+        toast.error("Network error. Please check your connection.");
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+  };
 
   return (
     <div className="w-full bg-white rounded shadow-md border border-gray-200 overflow-hidden ">
-      <ConfigProvider theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}>
-
+      <ConfigProvider
+        theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}
+      >
         {/* Header */}
         <div className="bg-white px-4 py-3 border-b border-gray-100 flex items-center">
           <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -350,9 +397,23 @@ const onSubmit = async (values: AdmissionFormValues) => {
         {/* Step indicator */}
         <div className="px-6 pt-4 pb-2">
           <div className="flex items-center gap-2">
-            <StepDot number={1} active={step === 1} done={step > 1} label="Parent info" primaryColor={primaryColor} />
-            <div className={`flex-1 h-0.5 transition-colors ${step > 1 ? "bg-green-500" : "bg-gray-200"}`} />
-            <StepDot number={2} active={step === 2} done={false} label="Student details" primaryColor={primaryColor} />
+            <StepDot
+              number={1}
+              active={step === 1}
+              done={step > 1}
+              label="Parent info"
+              primaryColor={primaryColor}
+            />
+            <div
+              className={`flex-1 h-0.5 transition-colors ${step > 1 ? "bg-green-500" : "bg-gray-200"}`}
+            />
+            <StepDot
+              number={2}
+              active={step === 2}
+              done={false}
+              label="Student details"
+              primaryColor={primaryColor}
+            />
           </div>
         </div>
 
@@ -360,7 +421,6 @@ const onSubmit = async (values: AdmissionFormValues) => {
         <div className="px-6 py-2">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-
               {/* ── Step 1: Parent ──────────────────────────────── */}
               {step === 1 && (
                 <div className="space-y-2">
@@ -368,11 +428,19 @@ const onSubmit = async (values: AdmissionFormValues) => {
                   <div className="flex flex-col items-center justify-center pb-4 border-b border-dashed border-gray-200">
                     <div
                       className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:bg-gray-100 transition-all"
-                      style={{ borderColor: parentPhotoPreview ? primaryColor : "#e5e7eb" }}
+                      style={{
+                        borderColor: parentPhotoPreview
+                          ? primaryColor
+                          : "#e5e7eb",
+                      }}
                       onClick={() => parentPhotoRef.current?.click()}
                     >
                       {parentPhotoPreview ? (
-                        <img src={parentPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        <img
+                          src={parentPhotoPreview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <Camera size={30} className="text-gray-300" />
                       )}
@@ -384,12 +452,28 @@ const onSubmit = async (values: AdmissionFormValues) => {
                       accept="image/*"
                       onChange={handleParentPhoto}
                     />
-                    <p className="text-[11px] text-gray-400 mt-2">Upload Profile Photo (Max 5MB)</p>
+                    <p className="text-[11px] text-gray-400 mt-2">
+                      Upload Profile Photo (Max 5MB)
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <FieldControl form={form} name="parent_first_name" label="First Name" icon={<User size={12} />} placeholder="name" rules={{ required: "Required" }} />
-                    <FieldControl form={form} name="parent_last_name" label="Last Name" icon={<User size={12} />} placeholder="surname" rules={{ required: "Required" }} />
+                    <FieldControl
+                      form={form}
+                      name="parent_first_name"
+                      label="First Name"
+                      icon={<User size={12} />}
+                      placeholder="name"
+                      rules={{ required: "Required" }}
+                    />
+                    <FieldControl
+                      form={form}
+                      name="parent_last_name"
+                      label="Last Name"
+                      icon={<User size={12} />}
+                      placeholder="surname"
+                      rules={{ required: "Required" }}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <FieldControl
@@ -403,7 +487,10 @@ const onSubmit = async (values: AdmissionFormValues) => {
                     <Controller
                       control={form.control}
                       name="parent_phone"
-                      rules={{ required: "Required", minLength: { value: 10, message: "Must be 10 digits" } }}
+                      rules={{
+                        required: "Required",
+                        minLength: { value: 10, message: "Must be 10 digits" },
+                      }}
                       render={({ field, fieldState }) => (
                         <FormItem className="w-full">
                           <ThemedInput
@@ -413,11 +500,17 @@ const onSubmit = async (values: AdmissionFormValues) => {
                             type="text"
                             {...field}
                             onChange={(e) => {
-                              const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              const clean = e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 10);
                               field.onChange(clean);
                             }}
                           />
-                          {fieldState.error && <p className="text-[10px] text-red-500 mt-1">{fieldState.error.message}</p>}
+                          {fieldState.error && (
+                            <p className="text-[10px] text-red-500 mt-1">
+                              {fieldState.error.message}
+                            </p>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -429,7 +522,7 @@ const onSubmit = async (values: AdmissionFormValues) => {
                     icon={<Lock size={12} />}
                     placeholder="Create password"
                     type="password"
-                    rules={{ required: "Required", minLength: { value: 6, message: "Min 6 chars" } }}
+                    // rules={{ required: "Required", minLength: { value: 6, message: "Min 6 chars" } }}
                   />
                 </div>
               )}
@@ -439,14 +532,25 @@ const onSubmit = async (values: AdmissionFormValues) => {
                 <div className="space-y-4">
                   {/* Parent summary */}
                   <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded p-3 text-xs text-green-800">
-                    <CheckCircle size={14} className="text-green-600 flex-shrink-0" />
+                    <CheckCircle
+                      size={14}
+                      className="text-green-600 flex-shrink-0"
+                    />
                     <span>
-                      Parent <strong>{form.getValues("parent_first_name")} {form.getValues("parent_last_name")}</strong> info saved — now add student(s)
+                      Parent{" "}
+                      <strong>
+                        {form.getValues("parent_first_name")}{" "}
+                        {form.getValues("parent_last_name")}
+                      </strong>{" "}
+                      info saved — now add student(s)
                     </span>
                   </div>
 
                   {fields.map((field, index) => (
-                    <div key={field.id} className="border border-gray-200 rounded px-3 py-1 space-y-2">
+                    <div
+                      key={field.id}
+                      className="border border-gray-200 rounded px-3 py-1 space-y-2"
+                    >
                       <div className="flex justify-between items-center">
                         <p className="text-xs font-bold text-gray-700 flex items-center gap-2">
                           <Users size={12} style={{ color: primaryColor }} />
@@ -457,7 +561,9 @@ const onSubmit = async (values: AdmissionFormValues) => {
                             type="button"
                             onClick={() => {
                               remove(index);
-                              setStudentPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+                              setStudentPhotoPreviews((prev) =>
+                                prev.filter((_, i) => i !== index),
+                              );
                               delete studentPhotoInputRefs.current[index];
                             }}
                             className="text-red-400 hover:text-red-600 transition-colors"
@@ -471,11 +577,19 @@ const onSubmit = async (values: AdmissionFormValues) => {
                       <div className="flex flex-col items-center justify-center pb-3">
                         <div
                           className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:bg-gray-100 transition-all"
-                          style={{ borderColor: studentPhotoPreviews[index] ? primaryColor : "#e5e7eb" }}
+                          style={{
+                            borderColor: studentPhotoPreviews[index]
+                              ? primaryColor
+                              : "#e5e7eb",
+                          }}
                           onClick={() => triggerStudentPhotoInput(index)}
                         >
                           {studentPhotoPreviews[index] ? (
-                            <img src={studentPhotoPreviews[index]!} alt="Preview" className="w-full h-full object-cover" />
+                            <img
+                              src={studentPhotoPreviews[index]!}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <Camera size={20} className="text-gray-300" />
                           )}
@@ -484,14 +598,30 @@ const onSubmit = async (values: AdmissionFormValues) => {
                           type="file"
                           className="hidden"
                           accept="image/*"
-                          ref={(el) => { studentPhotoInputRefs.current[index] = el; }}
+                          ref={(el) => {
+                            studentPhotoInputRefs.current[index] = el;
+                          }}
                           onChange={(e) => handleStudentPhoto(e, index)}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <FieldControl form={form} name={`students.${index}.first_name`} label="First Name" icon={<User size={12} />} placeholder="First name" rules={{ required: "Required" }} />
-                        <FieldControl form={form} name={`students.${index}.last_name`} label="Last Name" icon={<User size={12} />} placeholder="Last name" rules={{ required: "Required" }} />
+                        <FieldControl
+                          form={form}
+                          name={`students.${index}.first_name`}
+                          label="First Name"
+                          icon={<User size={12} />}
+                          placeholder="First name"
+                          rules={{ required: "Required" }}
+                        />
+                        <FieldControl
+                          form={form}
+                          name={`students.${index}.last_name`}
+                          label="Last Name"
+                          icon={<User size={12} />}
+                          placeholder="Last name"
+                          rules={{ required: "Required" }}
+                        />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <FieldControl
@@ -509,14 +639,19 @@ const onSubmit = async (values: AdmissionFormValues) => {
                           icon={<Lock size={12} />}
                           placeholder="Password"
                           type="password"
-                          rules={{ required: "Required", minLength: { value: 6, message: "Min 6 chars" } }}
+                          // rules={{
+                          //   required: "Required",
+                          //   minLength: { value: 6, message: "Min 6 chars" },
+                          // }}
                         />
                       </div>
 
                       {/* Session / Class / Section */}
                       <div className="grid grid-cols-3 gap-3">
                         <FormItem className="w-full">
-                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">Session</label>
+                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">
+                            Session
+                          </label>
                           <Controller
                             name={`students.${index}.session_id`}
                             control={form.control}
@@ -526,17 +661,28 @@ const onSubmit = async (values: AdmissionFormValues) => {
                                 <Select
                                   {...f}
                                   className="w-full h-[33px]"
-                                  placeholder={dropdownLoading ? "Loading..." : "Session"}
+                                  placeholder={
+                                    dropdownLoading ? "Loading..." : "Session"
+                                  }
                                   loading={dropdownLoading}
-                                  options={sessions.map(s => ({ value: s.id, label: s.name }))}
+                                  options={sessions.map((s) => ({
+                                    value: s.id,
+                                    label: s.name,
+                                  }))}
                                 />
-                                {fieldState.error && <p className="text-[10px] text-red-500 mt-1">{fieldState.error.message}</p>}
+                                {fieldState.error && (
+                                  <p className="text-[10px] text-red-500 mt-1">
+                                    {fieldState.error.message}
+                                  </p>
+                                )}
                               </>
                             )}
                           />
                         </FormItem>
                         <FormItem className="w-full">
-                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">Class</label>
+                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">
+                            Class
+                          </label>
                           <Controller
                             name={`students.${index}.class_id`}
                             control={form.control}
@@ -546,31 +692,51 @@ const onSubmit = async (values: AdmissionFormValues) => {
                                 <Select
                                   {...f}
                                   className="w-full h-[33px]"
-                                  placeholder={dropdownLoading ? "Loading..." : "Class"}
+                                  placeholder={
+                                    dropdownLoading ? "Loading..." : "Class"
+                                  }
                                   loading={dropdownLoading}
-                                  options={classes.map(c => ({ value: c.id, label: c.name }))}
+                                  options={classes.map((c) => ({
+                                    value: c.id,
+                                    label: c.name,
+                                  }))}
                                 />
-                                {fieldState.error && <p className="text-[10px] text-red-500 mt-1">{fieldState.error.message}</p>}
+                                {fieldState.error && (
+                                  <p className="text-[10px] text-red-500 mt-1">
+                                    {fieldState.error.message}
+                                  </p>
+                                )}
                               </>
                             )}
                           />
                         </FormItem>
                         <FormItem className="w-full">
-                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">Section</label>
+                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">
+                            Section
+                          </label>
                           <Controller
                             name={`students.${index}.section_id`}
                             control={form.control}
-                            rules={{ required: "Required" }}
+                            // rules={{ required: "Required" }}
                             render={({ field: f, fieldState }) => (
                               <>
                                 <Select
                                   {...f}
                                   className="w-full h-[33px]"
-                                  placeholder={dropdownLoading ? "Loading..." : "Section"}
+                                  placeholder={
+                                    dropdownLoading ? "Loading..." : "Section"
+                                  }
                                   loading={dropdownLoading}
-                                  options={sections.map(s => ({ value: s.id, label: s.name }))}
+                                  options={sections.map((s) => ({
+                                    value: s.id,
+                                    label: s.name,
+                                  }))}
                                 />
-                                {fieldState.error && <p className="text-[10px] text-red-500 mt-1">{fieldState.error.message}</p>}
+                                {fieldState.error && (
+                                  <p className="text-[10px] text-red-500 mt-1">
+                                    {fieldState.error.message}
+                                  </p>
+                                )}
                               </>
                             )}
                           />
@@ -590,14 +756,21 @@ const onSubmit = async (values: AdmissionFormValues) => {
                               <NepaliDatePicker
                                 inputClassName="w-full h-[33px] px-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-primary text-[#364a63]"
                                 value={adToBSValue(f.value)}
-                                onChange={(bsVal: string) => f.onChange(bsToADValue(bsVal))}
-                                options={{ calenderLocale: "ne", valueLocale: "en" }}
+                                onChange={(bsVal: string) =>
+                                  f.onChange(bsToADValue(bsVal))
+                                }
+                                options={{
+                                  calenderLocale: "ne",
+                                  valueLocale: "en",
+                                }}
                               />
                             )}
                           />
                         </FormItem>
                         <FormItem className="w-full">
-                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">Gender</label>
+                          <label className="text-[12px] font-bold text-gray-700 mb-1 block">
+                            Gender
+                          </label>
                           <Controller
                             name={`students.${index}.gender`}
                             control={form.control}
@@ -624,7 +797,7 @@ const onSubmit = async (values: AdmissionFormValues) => {
                     type="button"
                     onClick={() => {
                       append({ ...EMPTY_STUDENT });
-                      setStudentPhotoPreviews(prev => [...prev, null]);
+                      setStudentPhotoPreviews((prev) => [...prev, null]);
                     }}
                     className="w-full border border-dashed rounded py-2 text-xs flex items-center justify-center gap-2 transition-colors hover:opacity-80"
                     style={{ borderColor: primaryColor, color: primaryColor }}
@@ -656,7 +829,11 @@ const onSubmit = async (values: AdmissionFormValues) => {
                 )}
 
                 {step === 1 && (
-                  <ThemedButton type="button" size="sm" onClick={handleNextStep}>
+                  <ThemedButton
+                    type="button"
+                    size="sm"
+                    onClick={handleNextStep}
+                  >
                     <div className="flex items-center gap-2">
                       Next — Add Students <ChevronRight size={12} />
                     </div>
@@ -666,7 +843,11 @@ const onSubmit = async (values: AdmissionFormValues) => {
                 {step === 2 && (
                   <ThemedButton type="submit" size="sm" disabled={loading}>
                     <div className="flex items-center gap-2">
-                      {loading ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      {loading ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Save size={12} />
+                      )}
                       Submit Admission
                     </div>
                   </ThemedButton>
@@ -675,7 +856,6 @@ const onSubmit = async (values: AdmissionFormValues) => {
             </form>
           </Form>
         </div>
-
       </ConfigProvider>
     </div>
   );
@@ -684,7 +864,11 @@ const onSubmit = async (values: AdmissionFormValues) => {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function StepDot({
-  number, active, done, label, primaryColor,
+  number,
+  active,
+  done,
+  label,
+  primaryColor,
 }: {
   number: number;
   active: boolean;
@@ -704,13 +888,24 @@ function StepDot({
       >
         {done ? <CheckCircle size={13} /> : number}
       </div>
-      <span className={`text-xs ${active ? "font-bold text-gray-800" : "text-gray-400"}`}>{label}</span>
+      <span
+        className={`text-xs ${active ? "font-bold text-gray-800" : "text-gray-400"}`}
+      >
+        {label}
+      </span>
     </div>
   );
 }
 
 function FieldControl({
-  form, name, label, icon, placeholder, disabled = false, type = "text", rules = {},
+  form,
+  name,
+  label,
+  icon,
+  placeholder,
+  disabled = false,
+  type = "text",
+  rules = {},
 }: any) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
@@ -740,7 +935,9 @@ function FieldControl({
             </button>
           )}
           {fieldState.error && (
-            <p className="text-[10px] text-red-500 mt-1">{fieldState.error.message}</p>
+            <p className="text-[10px] text-red-500 mt-1">
+              {fieldState.error.message}
+            </p>
           )}
         </FormItem>
       )}

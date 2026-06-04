@@ -1180,7 +1180,7 @@ useEffect(() => {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11px] text-gray-400 pb-2">
+        <p className="text-center border-t mt-5  text-[11px] text-gray-600 p-4">
           SchoolMS · Academic Management System · © {new Date().getFullYear()}
         </p>
 

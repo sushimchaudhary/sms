@@ -37,7 +37,9 @@
     "studentAttendance": "विद्यार्थी उपस्थिति",
     "questionPaper" : "प्रश्नपत्र",
     "allinone": "सबै एकै ठाउँमा",
-"questionPaperManagement": "प्रश्नपत्र व्यवस्थापन"
+    "questionPaperManagement": "प्रश्नपत्र व्यवस्थापन",
+    "questionSection": "प्रश्न खण्ड",
+    "question": "प्रश्नहरूको सूची"
   },
   "roles": {
     "superadmin": "सुपर एडमिन",

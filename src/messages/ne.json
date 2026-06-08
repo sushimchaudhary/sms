@@ -34,7 +34,10 @@
     "complaints": "गुनासो",
     "attendance": "उपस्थिति",
     "staffAttendance": "कर्मचारी उपस्थिति",
-    "studentAttendance": "विद्यार्थी उपस्थिति"
+    "studentAttendance": "विद्यार्थी उपस्थिति",
+    "questionPaper" : "प्रश्नपत्र",
+    "allinone": "सबै एकै ठाउँमा",
+"questionPaperManagement": "प्रश्नपत्र व्यवस्थापन"
   },
   "roles": {
     "superadmin": "सुपर एडमिन",

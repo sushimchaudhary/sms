@@ -34,7 +34,13 @@
     "complaints": "Complaints",
     "attendance": "Attendance",
     "staffAttendance": "Staff Attendance",
-    "studentAttendance": "Student Attendance"
+    "studentAttendance": "Student Attendance",
+    "questionPaper": "Paper Template",
+    "questionSection": "Question Section",
+    "question" : "Question List",
+    "allinone" : "All in One",
+    "questionPaperManagement":"Paper Managment"
+
   },
   "roles": {
     "superadmin": "Super Admin",

@@ -156,7 +156,7 @@ export default function AdmissionFormInline({
     name: "students",
   });
 
-  // ── Fetch dropdown data on mount (no isOpen needed) ───────────────────────
+  // ── Fetch dropdown data on mount ───────────────────────
   useEffect(() => {
     const fetchData = async () => {
       setDropdownLoading(true);
@@ -166,9 +166,20 @@ export default function AdmissionFormInline({
           ClassServices.getAllClasses(),
           SectionServices.getAllSections(),
         ]);
-        setSessions(sessionRes.results || sessionRes || []);
-        setClasses(classRes.results || classRes || []);
-        setSections(sectionRes.results || sectionRes || []);
+
+        const sessionsData = sessionRes.results || sessionRes || [];
+        const classesData = classRes.results || classRes || [];
+        const sectionsData = sectionRes.results || sectionRes || [];
+
+        setSessions(sessionsData);
+        setClasses(classesData);
+        setSections(sectionsData);
+
+        // अटो-सेलेक्ट Active Session (पहिलो विद्यार्थीको लागि)
+        const activeSession = sessionsData.find((s: any) => s.is_active === true);
+        if (activeSession) {
+          form.setValue("students.0.session_id", activeSession.id);
+        }
       } catch {
         toast.error("Failed to load dropdown data");
       } finally {
@@ -177,7 +188,7 @@ export default function AdmissionFormInline({
     };
 
     fetchData();
-  }, []); // runs once on mount
+  }, []);
 
   // ── Reset form helper ─────────────────────────────────────────────────────
   const resetForm = () => {

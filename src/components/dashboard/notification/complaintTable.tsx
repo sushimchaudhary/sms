@@ -438,7 +438,7 @@ const ComplaintTable = ({
                               </span>
                             )}
                           </div>
-                        </td>
+                         </td>
 
                         {/* View Message/Response button */}
                         <td className="px-6 py-1">

@@ -219,13 +219,13 @@ export default function LeaveForm({
       />
 
       <div
-        className={`fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
+        className={`fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-2 transition-all duration-300 ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
       >
-        <div className="w-full max-w-xl bg-white rounded shadow-md border border-gray-200 flex flex-col max-h-[95vh] overflow-hidden font-mukta">
+        <div className="w-full max-w-xl bg-white rounded shadow-md border border-gray-200 flex flex-col max-h-[80vh]  ">
           <ConfigProvider
             theme={{ token: { colorPrimary: primaryColor, borderRadius: 4 } }}
           >
-            <div className="bg-white px-4 py-2 border-b border-gray-100 flex justify-between items-center">
+            <div className="bg-white px-2 py-2 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                 <ClipboardList size={15} style={{ color: primaryColor }} />
                 {isUpdate
@@ -245,7 +245,7 @@ export default function LeaveForm({
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="px-4 sm:px-6 py-4 space-y-2 overflow-y-auto flex-1"
+                className="px-2 sm:px-6 py-2 space-y-1.5 overflow-y-auto flex-1"
               >
                 {/* Status Section for Management */}
                 {isManagement && isUpdate && (
@@ -382,7 +382,7 @@ export default function LeaveForm({
                       <textarea
                         {...field}
                         disabled={!canEditFields}
-                        className="w-full p-2 border border-gray-200 rounded text-[12px] min-h-[70px] focus:border-blue-400 outline-none disabled:bg-gray-50"
+                        className="w-full p-2 border border-gray-200 rounded text-[12px] min-h-[30px] focus:border-blue-400 outline-none disabled:bg-gray-50"
                         placeholder="Reason for leave..."
                       />
                     )}
@@ -418,7 +418,7 @@ export default function LeaveForm({
                   </div>
                 </div>
 
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2 border-t">
                   <CancelButton onClick={handleClose} disabled={loading} />
                   <ThemedButton type="submit" size="sm" disabled={loading}>
                     <div className="flex items-center justify-center gap-2">

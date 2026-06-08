@@ -26,6 +26,7 @@ import cookies from "js-cookie";
 import { SessionServices } from "@/services/sessionsServices";
 // नेपाली मितिको लागि (यदि यो लाइब्रेरी छैन भने install गर्नुहोला: npm i nepali-date-converter)
 import NepaliDate from "nepali-date-converter";
+import { useTheme } from "@/lib/context/ThemeContext";
 
 // ── Base URL + resolvePhoto ───────────────────────────────────────────────────
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -76,7 +77,7 @@ export default function TopNavbar({
   const [schoolLogo, setSchoolLogo]       = useState<string>("");
   const [schoolLoading, setSchoolLoading] = useState(false);
   const [userPhoto, setUserPhoto]         = useState<string>("");
-
+   const { primaryColor } = useTheme();
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [latestNotifications, setLatestNotifications] = useState<any[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -179,17 +180,37 @@ const currentUnreadCount = unreadNotifications.length;
 };
 
   // ── Fetch latest 5 notifications ──
-  useEffect(() => {
-    const fetchLatest = async () => {
-      try {
-        const res = await NotificationServices.getAllNotifications();
-        const all = Array.isArray(res) ? res : res?.results || res?.data || [];
-        setLatestNotifications([...all].reverse().slice(0, 5));
-      } catch {}
-    };
-    if (user) fetchLatest();
-  }, [user]);
+  // useEffect(() => {
+  //   const fetchLatest = async () => {
+  //     try {
+  //       const res = await NotificationServices.getAllNotifications();
+  //       const all = Array.isArray(res) ? res : res?.results || res?.data || [];
+  //       setLatestNotifications([...all].reverse().slice(0, 3));
+  //     } catch {}
+  //   };
+  //   if (user) fetchLatest();
+  // }, [user]);
 
+
+// TopNavbar.tsx को useEffect
+useEffect(() => {
+  const fetchLatest = async () => {
+    try {
+      const res = await NotificationServices.getAllNotifications();
+      const all = Array.isArray(res) ? res : res?.results || res?.data || [];
+
+      // फिल्टर नहटाउने हो भने, कम्तिमा पछिल्ला ५-१० वटा नोटिफिकेसन राख्नुहोस्
+      // आजको मात्र भन्दा पनि पछिल्ला नोटिफिकेसन देखाउनु राम्रो हुन्छ
+      const sorted = [...all].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      setLatestNotifications(sorted.slice(0, 5)); // ५ वटा सम्म देखाउनुहोस्
+    } catch (error) {
+      console.error("Error", error);
+    }
+  };
+
+  if (user) fetchLatest();
+}, [user]);
   // ── Close dropdowns on outside click ──
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -372,10 +393,14 @@ const currentUnreadCount = unreadNotifications.length;
         <div className="hidden md:flex items-center gap-2 text-xs font-medium pl-1">
           <Clock size={14} className={`opacity-60 ${isDarkNav ? "text-slate-300" : "text-slate-500"}`} />
           <div className="flex items-center gap-1.5">
-            <span className={isDarkNav ? "text-slate-200" : "text-slate-700"}>{formattedDates.eng}</span>
-            <span className="opacity-40">|</span>
-            <span className={`font-semibold ${isDarkNav ? "text-emerald-400" : "text-emerald-600"}`}>{formattedDates.nep}</span>
-          </div>
+  <span className={isDarkNav ? "text-slate-200" : "text-slate-700"}>
+    {formattedDates.eng}
+  </span>
+  <span className="opacity-40">|</span>
+  <span className="font-semibold" style={{ color: primaryColor }}>
+    {formattedDates.nep}
+  </span>
+</div>
         </div>
       </div>
 

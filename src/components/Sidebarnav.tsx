@@ -33,6 +33,9 @@ import {
   Bell,
   Calendar,
   File,
+  LayoutTemplate,
+  FileText,
+  ClipboardList,
 } from "lucide-react";
 import useAuth from "@/lib/hooks/useAuth";
 import { SchoolServices } from "@/services/schoolServices";
@@ -155,16 +158,16 @@ const SCHOOL_ADMIN_GROUPS: MenuGroup[] = [
       },
 
        {
-        icon: File, 
-        labelKey: "nav.questionPaperManagement", 
-        href: "#",
-        submenu: [
-          { labelKey: "nav.questionPaper", href: "/paper-template", icon: File },
-          { labelKey: "nav.questionSection", href: "/question-section", icon: File },
-          { labelKey: "nav.question", href: "/question-paper", icon: File },
-          { labelKey: "nav.allinone", href: "/all-in-one-paper", icon: File },
-        ],
-      },
+  icon: BookOpen, // मुख्य मेनुको लागि
+  labelKey: "nav.questionPaperManagement",
+  href: "#",
+  submenu: [
+    { labelKey: "nav.questionPaper", href: "/paper-template", icon: LayoutTemplate },
+    { labelKey: "nav.questionSection", href: "/question-section", icon: Layers },
+    { labelKey: "nav.question", href: "/question-paper", icon: FileText },
+    { labelKey: "nav.allinone", href: "/all-in-one-paper", icon: ClipboardList },
+  ],
+},
     ],
   },
   {
@@ -230,6 +233,17 @@ const TEACHER_GROUPS: MenuGroup[] = [
           { labelKey: "nav.studentAttendance", href: "/attendance/student-attendance", icon: GraduationCap },
         ],
       },
+      {
+  icon: BookOpen, // मुख्य मेनुको लागि
+  labelKey: "nav.questionPaperManagement",
+  href: "#",
+  submenu: [
+    { labelKey: "nav.questionPaper", href: "/paper-template", icon: LayoutTemplate },
+    { labelKey: "nav.questionSection", href: "/question-section", icon: Layers },
+    { labelKey: "nav.question", href: "/question-paper", icon: FileText },
+    { labelKey: "nav.allinone", href: "/all-in-one-paper", icon: ClipboardList },
+  ],
+},
       { icon: CalendarDays, labelKey: "nav.leaveApplication", href: "/leave-application" },
       { icon: Calendar,     labelKey: "nav.academicCalendar", href: "/academic-calendar" },
     ],

@@ -4,15 +4,15 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   ChevronDown, ChevronRight, Pencil, BookOpen, Clock, Award,
   Trash2, Plus, FileText, Hash, ImageIcon, AlignLeft, Printer,
-  Loader2, Eye, X, Save, CheckCircle2, GripVertical, AlertCircle,
+  Loader2, Eye, X, Save, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { QuestionPaperServices } from "@/services/questionpaperServices";
 import ConfirmModal from "@/components/delete/confirmModel";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { SchoolServices } from "@/services/schoolServices";
 import { ConfigProvider, Select, Input, InputNumber } from "antd";
+import { QuestionTableSkeleton } from "@/components/ui/QuestionTableSkelton";
 
 const { TextArea } = Input;
 
@@ -86,18 +86,37 @@ function FieldGroup({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Inline QuestionCard — mirrors Builder Step 3 exactly
+// AutoOpenForm — fires once when a section has 0 questions and no pending form
+// ─────────────────────────────────────────────────────────────────────────────
+function AutoOpenForm({
+  sectionId, questionCount, newQuestions, onInit,
+}: {
+  sectionId: number; questionCount: number;
+  newQuestions: Record<number, any[]>; onInit: () => void;
+}) {
+  const hasInit = React.useRef(false);
+  useEffect(() => {
+    if (!hasInit.current && questionCount === 0 && !(newQuestions[sectionId]?.length > 0)) {
+      hasInit.current = true;
+      onInit();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline QuestionCard
 // ─────────────────────────────────────────────────────────────────────────────
 function InlineQuestionCard({
   q, qi, saving, primaryColor, sectionId,
-  onUpdate, onSave, onRemove, onImageChange,
+  onUpdate, onSave, onCancel, onImageChange,
 }: {
   q: QuestionDraft; qi: number; saving: boolean; primaryColor: string; sectionId: number;
   onUpdate: (field: keyof QuestionDraft, val: any) => void;
-  onSave: () => void; onRemove: () => void;
+  onSave: () => void; onCancel: () => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  const [expanded, setExpanded] = useState(!q.saved);
+  const [expanded, setExpanded] = useState(true);
 
   return (
     <div className={`border rounded overflow-hidden ${q.saved ? "border-green-200 bg-green-50/30" : "border-gray-200 bg-white"}`}>
@@ -128,10 +147,8 @@ function InlineQuestionCard({
         </div>
       </div>
 
-      {/* Expanded form — exact same as Builder Step 3 */}
       {expanded && (
         <div className="border-t border-gray-100 px-3 py-3 space-y-3">
-
           <div className="grid grid-cols-2 gap-3">
             <FieldGroup label="Question Type">
               <Select
@@ -172,7 +189,6 @@ function InlineQuestionCard({
             />
           </FieldGroup>
 
-          {/* Image upload — exact match with Builder */}
           <FieldGroup label="Image (optional)">
             {q.imagePreview ? (
               <div className="flex items-center gap-2">
@@ -212,8 +228,6 @@ function InlineQuestionCard({
                     onChange={onImageChange}
                   />
                 </label>
-
-                {/* ── Inline image error — same as Builder ── */}
                 {q.imageError && (
                   <p className="flex items-center gap-1 text-[11px] text-red-500 font-medium leading-tight">
                     <svg
@@ -239,8 +253,8 @@ function InlineQuestionCard({
                 onChange={(val) => onUpdate("status", val as "draft" | "final")}
                 style={{ width: "100%", fontSize: 12, height: 34 }}
                 options={[
-                  { label: "Draft",  value: "draft"  },
-                  { label: "Final",  value: "final"  },
+                  { label: "Draft", value: "draft" },
+                  { label: "Final", value: "final" },
                 ]}
               />
             </FieldGroup>
@@ -257,10 +271,10 @@ function InlineQuestionCard({
           <div className="flex justify-between items-center pt-1">
             <button
               type="button"
-              onClick={onRemove}
-              className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 transition"
+              onClick={onCancel}
+              className="flex items-center gap-1 text-xs text-red-500 hover:text-red-500 border border-red-500 hover:bg-red-100 px-2.5 py-1 rounded transition-colors"
             >
-              <Trash2 size={11} /> Remove
+              <X size={11} /> Cancel
             </button>
             <button
               type="button"
@@ -465,7 +479,7 @@ const PrintPreviewModal = ({
             </div>
 
             {(sections || []).map((section: any, sIdx: number) => (
-              <div key={section.id} className="rounded-lg border border-gray-200 overflow-hidden">
+              <div key={section.id} className="rounded-sm border border-gray-200 overflow-hidden">
                 <div
                   className="px-4 py-2.5 flex justify-between items-center border-b"
                   style={{ backgroundColor: `${primaryColor}08` }}
@@ -559,9 +573,41 @@ const PrintPreviewModal = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Search highlight helper
+// ─────────────────────────────────────────────────────────────────────────────
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query.trim() || !text) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main QuestionTable
 // ─────────────────────────────────────────────────────────────────────────────
-const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
+const QuestionTable = ({
+  refreshTrigger,
+  onEdit,
+  onAddQuestion,
+  searchQuery = "",
+}: {
+  refreshTrigger: any;
+  onEdit: (q: any) => void;
+  onAddQuestion?: (args: { sectionId: any; paperId: any }) => void;
+  searchQuery?: string;
+}) => {
   const { primaryColor } = useTheme();
 
   const [sections, setSections] = useState<any[]>([]);
@@ -573,7 +619,6 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
   const [expandedSections, setExpandedSections] = useState<Record<string | number, boolean>>({});
   const [expandedQuestion, setExpandedQuestion] = useState<Record<string | number, boolean>>({});
 
-  // New questions added inline (keyed by sectionId)
   const [newQuestions, setNewQuestions] = useState<Record<number, QuestionDraft[]>>({});
 
   const [isModalOpen,   setIsModalOpen]   = useState(false);
@@ -616,12 +661,77 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
     }, {} as any),
   [sections]);
 
-  // ── Toggles ─────────────────────────────────────────────────────────────
+  // ── Search filter ────────────────────────────────────────────────────────
+  const filteredGroupedData = useMemo(() => {
+    if (!searchQuery.trim()) return groupedData;
+
+    const q = searchQuery.toLowerCase();
+    const result: any = {};
+
+    Object.keys(groupedData).forEach((pId) => {
+      const paper = paperMap[pId];
+
+      // Also match on paper-level fields (title, subject, class)
+      const paperMatches =
+        paper?.title?.toLowerCase().includes(q) ||
+        paper?.subject_name_display?.toLowerCase().includes(q) ||
+        paper?.class_name?.toLowerCase().includes(q);
+
+      const filteredSections = groupedData[pId]
+        .map((section: any) => {
+          // Match on section title / heading too
+          const sectionMatches =
+            section.title?.toLowerCase().includes(q) ||
+            section.heading?.toLowerCase().includes(q);
+
+          const filteredQuestions = (section.questions || []).filter(
+            (question: any) =>
+              question.question?.toLowerCase().includes(q) ||
+              question.description?.toLowerCase().includes(q) ||
+              question.question_type?.toLowerCase().includes(q) ||
+              question.status?.toLowerCase().includes(q)
+          );
+
+          // Keep section if section itself matches OR has matching questions
+          if (sectionMatches || paperMatches) {
+            return { ...section }; // show all questions in matched section/paper
+          }
+          if (filteredQuestions.length > 0) {
+            return { ...section, questions: filteredQuestions };
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      if (filteredSections.length > 0) {
+        result[pId] = filteredSections;
+      }
+    });
+
+    return result;
+  }, [groupedData, paperMap, searchQuery]);
+
+  // Auto-expand all papers & sections when searching
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const paperExpand: Record<string | number, boolean> = {};
+    const sectionExpand: Record<string | number, boolean> = {};
+    Object.keys(filteredGroupedData).forEach((pId) => {
+      paperExpand[pId] = true;
+      (filteredGroupedData[pId] || []).forEach((s: any) => {
+        sectionExpand[s.id] = true;
+      });
+    });
+    setExpandedPapers(paperExpand);
+    setExpandedSections(sectionExpand);
+  }, [searchQuery, filteredGroupedData]);
+
+  // ── Toggles ──────────────────────────────────────────────────────────────
   const togglePaper    = (id: string | number) => setExpandedPapers(p => ({ ...p, [id]: !p[id] }));
   const toggleSection  = (id: string | number) => setExpandedSections(p => ({ ...p, [id]: !p[id] }));
   const toggleQuestion = (id: string | number) => setExpandedQuestion(p => ({ ...p, [id]: !p[id] }));
 
-  // ── Delete existing question ─────────────────────────────────────────────
+  // ── Delete ───────────────────────────────────────────────────────────────
   const handleDeleteClick = (e: React.MouseEvent, id: string | number) => {
     e.stopPropagation();
     setDeleteId(id);
@@ -644,20 +754,23 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
     }
   };
 
-  // ── New inline question helpers (mirrors Builder Step 3) ─────────────────
+  // ── Inline question helpers ───────────────────────────────────────────────
   const newQuestionsForSection = (sectionId: number): QuestionDraft[] =>
     newQuestions[sectionId] ?? [];
 
-  const addNewQuestion = (sectionId: number) => {
+  const addNewQuestion = (sectionId: number, questionCount: number = 0) => {
     const existing = newQuestionsForSection(sectionId);
+    if (existing.length > 0) {
+      toast.error("Complete the current form to add a new one.");
+      return;
+    }
     setNewQuestions((prev) => ({
       ...prev,
       [sectionId]: [
-        ...existing,
         {
           question_type: "very_short",
           question: "", description: "",
-          marks: "", order: existing.length + 1,
+          marks: "", order: questionCount + 1,
           status: "draft",
           image: null, imagePreview: null, imageError: null,
           saved: false,
@@ -681,7 +794,7 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
     });
   };
 
-  // ── Image change — exact same logic as Builder ────────────────────────────
+  // ── Image change ─────────────────────────────────────────────────────────
   const handleImageChange = (
     sectionId: number,
     qIdx: number,
@@ -689,7 +802,7 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = ""; // reset so same file can be re-selected
+    e.target.value = "";
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
       setNewQuestions((prev) => {
@@ -714,7 +827,7 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
           ...list[qIdx],
           image: file,
           imagePreview: reader.result as string,
-          imageError: null, // ✅ clear error on successful select
+          imageError: null,
           saved: false,
         };
         return { ...prev, [sectionId]: list };
@@ -723,7 +836,7 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
     reader.readAsDataURL(file);
   };
 
-  // ── Save new inline question — same as Builder saveQuestion ──────────────
+  // ── Save inline question ─────────────────────────────────────────────────
   const saveNewQuestion = async (sectionId: number, qIdx: number) => {
     const q = newQuestionsForSection(sectionId)[qIdx];
     if (!q) return;
@@ -751,8 +864,18 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
 
       await QuestionPaperServices.createQuestion(fd);
 
-      // Remove from new-questions list and refresh table data
-      removeNewQuestion(sectionId, qIdx);
+      setNewQuestions((prev) => {
+        const list = [...(prev[sectionId] ?? [])];
+        list[qIdx] = {
+          question_type: "very_short",
+          question: "", description: "",
+          marks: "", order: list[qIdx].order + 1,
+          status: "draft",
+          image: null, imagePreview: null, imageError: null,
+          saved: false,
+        };
+        return { ...prev, [sectionId]: list };
+      });
       toast.success("Question saved");
       fetchData();
     } catch (err: any) {
@@ -785,10 +908,7 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
     try {
       const rawSections   = groupedData[previewPaperId] || [];
       const finalSections = filterDraftQuestions(rawSections);
-
-      // ✅ Single call — no duplicate
       await openPrintWindow(paperInfo, finalSections);
-
       setPreviewOpen(false);
       setPreviewPaperId(null);
     } catch {
@@ -816,310 +936,340 @@ const QuestionTable = ({ refreshTrigger, onEdit, onAddQuestion }: any) => {
       }}
     >
       <>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {loading ? (
-            <TableLoadingSkeleton rows={3} cols={4} />
-          ) : Object.keys(groupedData).map((pId) => {
-            const paperInfo  = paperMap[pId];
-            const isExpanded = expandedPapers[pId];
+            <QuestionTableSkeleton />
+          ) : Object.keys(filteredGroupedData).length === 0 ? (
+            // ── Empty / no-results state ──
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+                style={{ backgroundColor: `${primaryColor}15` }}
+              >
+                <AlertCircle size={22} style={{ color: primaryColor }} />
+              </div>
+              <p className="text-sm font-semibold text-gray-600">
+                {searchQuery.trim()
+                  ? `No results for "${searchQuery}"`
+                  : "No question papers found"}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {searchQuery.trim()
+                  ? "Try a different keyword — search looks at question text, type, and status."
+                  : "Create a paper and add sections to get started."}
+              </p>
+            </div>
+          ) : (
+            Object.keys(filteredGroupedData).map((pId) => {
+              const paperInfo  = paperMap[pId];
+              const isExpanded = expandedPapers[pId];
 
-            return (
-              <div key={pId} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              return (
+                <div key={pId} className="bg-white rounded-sm border border-gray-200 shadow-sm overflow-hidden">
 
-                {/* ── PAPER HEADER ── */}
-                <div
-                  className="px-5 py-4 border-b cursor-pointer transition-all hover:brightness-95"
-                  style={{
-                    background:  `linear-gradient(to right, ${primaryColor}10, ${primaryColor}18)`,
-                    borderColor: `${primaryColor}30`,
-                  }}
-                  onClick={() => togglePaper(pId)}
-                >
-                  <div className="flex justify-between items-center gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
-                        style={isExpanded
-                          ? { backgroundColor: primaryColor, color: "#fff" }
-                          : { backgroundColor: "#fff", border: `1px solid ${primaryColor}`, color: primaryColor }}
-                      >
-                        {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  {/* ── PAPER HEADER ── */}
+                  <div
+                    className="p-2 border-b cursor-pointer transition-all hover:brightness-95"
+                    style={{
+                      background:  `linear-gradient(to right, ${primaryColor}10, ${primaryColor}18)`,
+                      borderColor: `${primaryColor}30`,
+                    }}
+                    onClick={() => togglePaper(pId)}
+                  >
+                    <div className="flex justify-between items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
+                          style={isExpanded
+                            ? { backgroundColor: primaryColor, color: "#fff" }
+                            : { backgroundColor: "#fff", border: `1px solid ${primaryColor}`, color: primaryColor }}
+                        >
+                          {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="font-bold text-gray-900 text-sm flex items-center gap-2 truncate">
+                            <BookOpen size={15} style={{ color: primaryColor }} className="flex-shrink-0" />
+                            {paperInfo ? (
+                              <>
+                                <HighlightText text={`${paperInfo.title} — ${paperInfo.subject_name_display}`} query={searchQuery} />
+                              </>
+                            ) : (
+                              `Paper ID: ${pId}`
+                            )}
+                          </h2>
+                          {paperInfo && (
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                              Class: <HighlightText text={paperInfo.class_name || "—"} query={searchQuery} />
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h2 className="font-bold text-gray-900 text-sm flex items-center gap-2 truncate">
-                          <BookOpen size={15} style={{ color: primaryColor }} className="flex-shrink-0" />
-                          {paperInfo
-                            ? `${paperInfo.title} — ${paperInfo.subject_name_display}`
-                            : `Paper ID: ${pId}`}
-                        </h2>
+
+                      <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                         {paperInfo && (
-                          <p className="text-[11px] text-gray-500 mt-0.5">
-                            Class: {paperInfo.class_name || "—"}
-                          </p>
+                          <>
+                            <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Award size={10} /> FM {paperInfo.full_marks}
+                            </span>
+                            <span className="text-[10px] font-semibold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Award size={10} /> PM {paperInfo.pass_marks}
+                            </span>
+                            <span className="text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Clock size={10} /> {paperInfo.duration}hr
+                            </span>
+                            <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <FileText size={10} /> {filteredGroupedData[pId].length} sections
+                            </span>
+                          </>
                         )}
+                        <button
+                          onClick={(e) => handleOpenPreview(e, pId)}
+                          className="flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1.5 rounded-sm transition-all active:scale-95 border hover:bg-gray-50"
+                          style={{ borderColor: primaryColor, color: primaryColor }}
+                          title="Preview & Print"
+                        >
+                          <Eye size={11} />
+                          Preview & Print
+                        </button>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                      {paperInfo && (
-                        <>
-                          <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Award size={10} /> FM {paperInfo.full_marks}
-                          </span>
-                          <span className="text-[10px] font-semibold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Award size={10} /> PM {paperInfo.pass_marks}
-                          </span>
-                          <span className="text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Clock size={10} /> {paperInfo.duration}hr
-                          </span>
-                          <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <FileText size={10} /> {groupedData[pId].length} sections
-                          </span>
-                        </>
-                      )}
-                      <button
-                        onClick={(e) => handleOpenPreview(e, pId)}
-                        className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-sm transition-all active:scale-95 hover:opacity-90"
-                        style={{ backgroundColor: primaryColor, color: "#fff" }}
-                        title="Preview & Print"
-                      >
-                        <Eye size={11} /> Preview & Print
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                {/* ── SECTIONS ── */}
-                {isExpanded && (
-                  <div className="p-4 space-y-3 bg-gray-50/40">
-                    {groupedData[pId].map((section: any, sectionIndex: number) => {
-                      const isSectionExpanded = expandedSections[section.id];
-                      const questionCount     = section.questions?.length || 0;
-                      const marksMatch        = Number(section.calculated_marks) === Number(section.total_marks);
-                      const pendingNew        = newQuestionsForSection(section.id);
+                  {/* ── SECTIONS ── */}
+                  {isExpanded && (
+                    <div className="p-2 space-y-3">
+                      {filteredGroupedData[pId].map((section: any, sectionIndex: number) => {
+                        const isSectionExpanded = expandedSections[section.id];
+                        const questionCount     = section.questions?.length || 0;
+                        const marksMatch        = Number(section.calculated_marks) === Number(section.total_marks);
+                        const pendingNew        = newQuestionsForSection(section.id);
 
-                      return (
-                        <div key={section.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                        return (
+                          <div key={section.id} className="overflow-hidden">
 
-                          {/* Section header */}
-                          <div
-                            className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
-                            onClick={() => toggleSection(section.id)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-6 h-6 rounded-md text-white text-[10px] font-black flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: primaryColor }}
-                              >
-                                {String.fromCharCode(65 + sectionIndex)}
+                            {/* Section header */}
+                            <div
+                              className="p-2 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+                              onClick={() => toggleSection(section.id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-6 h-6 rounded-sm text-white text-[10px] font-black flex items-center justify-center flex-shrink-0"
+                                  style={{ backgroundColor: primaryColor }}
+                                >
+                                  {String.fromCharCode(65 + sectionIndex)}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm leading-none" style={{ color: primaryColor }}>
+                                    <HighlightText text={section.title.toUpperCase()} query={searchQuery} />
+                                  </p>
+                                  <p className="text-[10px] text-gray-400 mt-0.5">
+                                    <HighlightText text={section.heading || ""} query={searchQuery} />
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-sm leading-none" style={{ color: primaryColor }}>
-                                  {section.title.toUpperCase()}
-                                </p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">{section.heading}</p>
+
+                              <div className="flex items-center gap-3">
+                                <div className="text-right hidden sm:block">
+                                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Marks</p>
+                                  <p className="text-xs font-bold text-gray-700">
+                                    <span className={marksMatch ? "text-green-600" : "text-orange-500"}>
+                                      {Number(section.calculated_marks)}
+                                    </span>
+                                    <span className="text-gray-400"> / {Number(section.total_marks)}</span>
+                                  </p>
+                                </div>
+                                <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Hash size={9} />{questionCount} Q
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isSectionExpanded) toggleSection(section.id);
+                                    addNewQuestion(section.id, questionCount);
+                                  }}
+                                  className="flex items-center gap-1 text-[10px] font-bold text-white px-2.5 py-1 rounded-sm transition-all active:scale-95 hover:opacity-90"
+                                  style={{ backgroundColor: primaryColor }}
+                                >
+                                  <Plus size={11} />
+                                </button>
+                                <div className={`text-gray-400 transition-transform ${isSectionExpanded ? "rotate-90" : ""}`}>
+                                  <ChevronRight size={14} />
+                                </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="text-right hidden sm:block">
-                                <p className="text-[9px] text-gray-400 uppercase tracking-wide">Marks</p>
-                                <p className="text-xs font-bold text-gray-700">
-                                  <span className={marksMatch ? "text-green-600" : "text-orange-500"}>
-                                    {Number(section.calculated_marks)}
-                                  </span>
-                                  <span className="text-gray-400"> / {Number(section.total_marks)}</span>
-                                </p>
-                              </div>
-                              <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <Hash size={9} />{questionCount} Q
-                              </span>
-                              {/* ── Add Question button — now adds inline card ── */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isSectionExpanded) toggleSection(section.id);
-                                  addNewQuestion(section.id);
-                                }}
-                                className="flex items-center gap-1 text-[10px] font-bold text-white px-2.5 py-1 rounded-md transition-all active:scale-95 hover:opacity-90"
-                                style={{ backgroundColor: primaryColor }}
-                              >
-                                <Plus size={11} /> Add
-                              </button>
-                              <div className={`text-gray-400 transition-transform ${isSectionExpanded ? "rotate-90" : ""}`}>
-                                <ChevronRight size={14} />
-                              </div>
-                            </div>
-                          </div>
+                            {/* ── QUESTIONS ── */}
+                            {isSectionExpanded && (
+                              <div className="border-t border-gray-100">
 
-                          {/* ── QUESTIONS ── */}
-                          {isSectionExpanded && (
-                            <div className="border-t border-gray-100">
+                                {questionCount > 0 && (
+                                  <table className="w-full text-left">
+                                    <thead>
+                                      <tr className="bg-gray-50 border-b border-gray-100">
+                                        <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-10">#</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Question</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-16 text-center">Marks</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-20 text-center">Type</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-16 text-center">Status</th>
+                                        <th className="px-4 py-2 w-16"></th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {section.questions.map((q: any, qIndex: number) => {
+                                        const isQExpanded = expandedQuestion[q.id];
+                                        const hasDesc     = !!q.description;
+                                        const hasImage    = !!q.image;
 
-                              {/* Existing questions table */}
-                              {questionCount > 0 && (
-                                <table className="w-full text-left">
-                                  <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-100">
-                                      <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-10">#</th>
-                                      <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Question</th>
-                                      <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-16 text-center">Marks</th>
-                                      <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-20 text-center">Type</th>
-                                      <th className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide w-16 text-center">Status</th>
-                                      <th className="px-4 py-2 w-16"></th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {section.questions.map((q: any, qIndex: number) => {
-                                      const isQExpanded = expandedQuestion[q.id];
-                                      const hasDesc     = !!q.description;
-                                      const hasImage    = !!q.image;
-
-                                      return (
-                                        <React.Fragment key={q.id}>
-                                          <tr
-                                            className="border-b text-xs hover:bg-gray-50/60 transition-colors group/row cursor-pointer"
-                                            onClick={() => (hasDesc || hasImage) && toggleQuestion(q.id)}
-                                          >
-                                            <td className="px-4 py-2.5 w-10">
-                                              <span
-                                                className="w-5 h-5 rounded-full text-white font-bold text-[10px] flex items-center justify-center"
-                                                style={{ backgroundColor: primaryColor }}
-                                              >
-                                                {qIndex + 1}
-                                              </span>
-                                            </td>
-                                            <td className="px-4 py-2.5 font-medium text-gray-800">
-                                              <div className="flex items-start gap-2">
-                                                <p className="line-clamp-2 leading-relaxed flex-1">{q.question}</p>
-                                                <div className="flex gap-1 mt-0.5 flex-shrink-0">
-                                                  {hasDesc  && <span title="Has description"><AlignLeft size={10} className="text-gray-300" /></span>}
-                                                  {hasImage && <span title="Has image"><ImageIcon size={10} className="text-gray-300" /></span>}
-                                                </div>
-                                              </div>
-                                            </td>
-                                            <td className="px-4 py-2.5 text-center font-bold text-gray-700">{q.marks ?? "—"}</td>
-                                            <td className="px-4 py-2.5 text-center">
-                                              <span
-                                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded capitalize"
-                                                style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
-                                              >
-                                                {q.question_type?.replace(/_/g, " ") ?? "—"}
-                                              </span>
-                                            </td>
-                                            <td className="px-4 py-2.5 text-center">
-                                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize ${STATUS_STYLE[q.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                                {q.status ?? "—"}
-                                              </span>
-                                            </td>
-                                            <td className="px-4 py-2.5">
-                                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                                                <button
-                                                  onClick={(e) => { e.stopPropagation(); onEdit(q); }}
-                                                  className="p-1 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700 transition-colors"
-                                                  title="Edit"
-                                                >
-                                                  <Pencil size={12} />
-                                                </button>
-                                                <button
-                                                  onClick={(e) => handleDeleteClick(e, q.id)}
-                                                  className="p-1 rounded hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
-                                                  title="Delete"
-                                                >
-                                                  <Trash2 size={12} />
-                                                </button>
-                                              </div>
-                                            </td>
-                                          </tr>
-
-                                          {isQExpanded && (hasDesc || hasImage) && (
+                                        return (
+                                          <React.Fragment key={q.id}>
                                             <tr
-                                              className="border-b border-gray-100"
-                                              style={{ backgroundColor: `${primaryColor}06` }}
+                                              className="border-t text-xs hover:bg-gray-50/60 transition-colors group/row cursor-pointer"
+                                              onClick={() => (hasDesc || hasImage) && toggleQuestion(q.id)}
                                             >
-                                              <td />
-                                              <td colSpan={5} className="px-4 py-3">
-                                                <div className="flex gap-4 items-start">
-                                                  {hasDesc && (
-                                                    <div className="flex-1">
-                                                      <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1">
-                                                        <AlignLeft size={9} /> Guideline
-                                                      </p>
-                                                      <p className="text-xs text-gray-600 leading-relaxed bg-white rounded border border-gray-100 px-3 py-2">
-                                                        {q.description}
-                                                      </p>
-                                                    </div>
-                                                  )}
-                                                  {hasImage && (
-                                                    <div className="flex-shrink-0">
-                                                      <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1">
-                                                        <ImageIcon size={9} /> Image
-                                                      </p>
-                                                      <img
-                                                        src={q.image}
-                                                        alt="question"
-                                                        className="h-20 w-auto rounded border border-gray-200 object-cover shadow-sm"
-                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                                      />
-                                                    </div>
-                                                  )}
+                                              <td className="px-4 py-2.5 w-10">
+                                                <span
+                                                  className="w-5 h-5 rounded-full text-white font-bold text-[10px] flex items-center justify-center"
+                                                  style={{ backgroundColor: primaryColor }}
+                                                >
+                                                  {qIndex + 1}
+                                                </span>
+                                              </td>
+                                              <td className="px-4 py-2.5 font-medium text-gray-800">
+                                                <div className="flex items-start gap-2">
+                                                  <p className="line-clamp-2 leading-relaxed flex-1">
+                                                    <HighlightText text={q.question} query={searchQuery} />
+                                                  </p>
+                                                  <div className="flex gap-1 mt-0.5 flex-shrink-0">
+                                                    {hasDesc  && <span title="Has description"><AlignLeft size={10} className="text-gray-300" /></span>}
+                                                    {hasImage && <span title="Has image"><ImageIcon size={10} className="text-blue-400" /></span>}
+                                                  </div>
+                                                </div>
+                                              </td>
+                                              <td className="px-4 py-2.5 text-center font-bold text-gray-700">
+                                                {q.marks != null ? Number(q.marks).toFixed(0) : "—"}
+                                              </td>
+                                              <td className="px-4 py-2.5 text-center">
+                                                <span
+                                                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded capitalize whitespace-nowrap"
+                                                  style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+                                                >
+                                                  <HighlightText
+                                                    text={q.question_type?.replace(/_/g, " ") ?? "—"}
+                                                    query={searchQuery}
+                                                  />
+                                                </span>
+                                              </td>
+                                              <td className="px-4 py-2.5 text-center">
+                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize ${STATUS_STYLE[q.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                                  <HighlightText text={q.status ?? "—"} query={searchQuery} />
+                                                </span>
+                                              </td>
+                                              <td className="px-4 py-2.5">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                                                  <button
+                                                    onClick={(e) => { e.stopPropagation(); onEdit(q); }}
+                                                    className="p-1 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700 transition-colors"
+                                                    title="Edit"
+                                                  >
+                                                    <Pencil size={12} />
+                                                  </button>
+                                                  <button
+                                                    onClick={(e) => handleDeleteClick(e, q.id)}
+                                                    className="p-1 rounded hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
+                                                    title="Delete"
+                                                  >
+                                                    <Trash2 size={12} />
+                                                  </button>
                                                 </div>
                                               </td>
                                             </tr>
-                                          )}
-                                        </React.Fragment>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              )}
 
-                              {/* ── NEW inline question cards (Builder Step 3 style) ── */}
-                              {pendingNew.length > 0 && (
-                                <div className="p-3 space-y-2 border-t border-dashed border-gray-200 bg-gray-50/60">
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1 mb-2">
-                                    <Plus size={9} /> New Questions
-                                  </p>
-                                  {pendingNew.map((q, qi) => (
-                                    <InlineQuestionCard
-                                      key={qi}
-                                      q={q}
-                                      qi={questionCount + qi}
-                                      saving={saving}
-                                      primaryColor={primaryColor}
-                                      sectionId={section.id}
-                                      onUpdate={(field, val) => updateNewQuestion(section.id, qi, field, val)}
-                                      onSave={() => saveNewQuestion(section.id, qi)}
-                                      onRemove={() => removeNewQuestion(section.id, qi)}
-                                      onImageChange={(e) => handleImageChange(section.id, qi, e)}
-                                    />
-                                  ))}
-                                </div>
-                              )}
+                                            {isQExpanded && (hasDesc || hasImage) && (
+                                              <tr
+                                                className="border-b border-gray-100"
+                                                style={{ backgroundColor: `${primaryColor}06` }}
+                                              >
+                                                <td />
+                                                <td colSpan={5} className="px-4 py-3">
+                                                  <div className="flex gap-4 items-start">
+                                                    {hasDesc && (
+                                                      <div className="flex-1">
+                                                        <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1">
+                                                          <AlignLeft size={9} /> Guideline
+                                                        </p>
+                                                        <p className="text-xs text-gray-600 leading-relaxed bg-white rounded border border-gray-100 px-3 py-2">
+                                                          <HighlightText text={q.description} query={searchQuery} />
+                                                        </p>
+                                                      </div>
+                                                    )}
+                                                    {hasImage && (
+                                                      <div className="flex-shrink-0">
+                                                        <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1">
+                                                          <ImageIcon size={9} /> Image
+                                                        </p>
+                                                        <img
+                                                          src={q.image}
+                                                          alt="question"
+                                                          className="h-20 w-auto rounded border border-gray-200 object-cover shadow-sm"
+                                                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                                        />
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </td>
+                                              </tr>
+                                            )}
+                                          </React.Fragment>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                )}
 
-                              {/* Empty state (no existing, no pending) */}
-                              {questionCount === 0 && pendingNew.length === 0 && (
-                                <div className="px-4 py-6 text-center text-xs text-gray-400">
-                                  No questions yet.{" "}
-                                  <button
-                                    className="font-semibold hover:underline"
-                                    style={{ color: primaryColor }}
-                                    onClick={() => addNewQuestion(section.id)}
-                                  >
-                                    Add one now →
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                                {/* Auto-open blank form when section is empty */}
+                                <AutoOpenForm
+                                  sectionId={section.id}
+                                  questionCount={questionCount}
+                                  newQuestions={newQuestions}
+                                  onInit={() => addNewQuestion(section.id, 0)}
+                                />
+
+                                {pendingNew.length > 0 && (
+                                  <div className="p-3 space-y-2 border-t border-dashed border-gray-200 bg-gray-50/60">
+                                    {pendingNew.map((q, qi) => (
+                                      <InlineQuestionCard
+                                        key={qi}
+                                        q={q}
+                                        qi={questionCount + qi}
+                                        saving={saving}
+                                        primaryColor={primaryColor}
+                                        sectionId={section.id}
+                                        onUpdate={(field, val) => updateNewQuestion(section.id, qi, field, val)}
+                                        onSave={() => saveNewQuestion(section.id, qi)}
+                                        onCancel={() => removeNewQuestion(section.id, qi)}
+                                        onImageChange={(e) => handleImageChange(section.id, qi, e)}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+
+                                {questionCount === 0 && pendingNew.length === 0 && (
+                                  <div className="px-4 py-6 text-center text-xs text-gray-400">
+                                    No questions yet.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* DELETE CONFIRM */}

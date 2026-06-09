@@ -1,241 +1,3 @@
-// "use client";
-
-// import React, { useEffect, useState } from "react";
-// import { useForm, Controller } from "react-hook-form";
-// import { Loader2, X, FileQuestion, Upload } from "lucide-react";
-// import { Form, FormItem } from "@/components/ui/form";
-// import { ThemedButton } from "@/components/ui/themedButton";
-// import { useTheme } from "@/lib/context/ThemeContext";
-// import { toast } from "sonner";
-// import { ConfigProvider, Input, InputNumber, Select, Upload as AntdUpload } from "antd";
-// import { CancelButton } from "@/components/ui/CancleButton";
-// import { QuestionPaperServices } from "@/services/questionpaperServices";
-// import { Image as ImageIcon } from "lucide-react";
-
-// const QUESTION_TYPES = [
-//   { value: 'very_short', label: 'Very Short' },
-//   { value: 'short', label: 'Short' },
-//   { value: 'medium', label: 'Medium' },
-//   { value: 'long', label: 'Long' },
-//   { value: 'free', label: 'Free Question' },
-//   { value: 'true_false', label: 'True/False' },
-//   { value: 'fill_blank', label: 'Fill in the Blank' },
-//   { value: 'read_answer', label: 'Read & Answer' },
-//   { value: 'match_text', label: 'Match Following (Text)' },
-//   { value: 'match_image', label: 'Match Following (Image)' },
-// ];
-
-// const STATUS_CHOICES = [
-//   { value: 'draft', label: 'Draft' },
-//   { value: 'final', label: 'Final' },
-//   { value: 'printed', label: 'Printed' },
-// ];
-
-// export default function QuestionForm({ initialData, paperId, sectionId, onClose, onSuccess, isOpen }: any) {
-//   const isUpdate = !!initialData;
-//   const { primaryColor } = useTheme();
-//   const [loading, setLoading] = useState(false);
-//   const [sections, setSections] = useState<any[]>([]);
-//   const [fileList, setFileList] = useState<any[]>([]);
-//   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-//   // 1. Sections fetch गर्ने
-//   useEffect(() => {
-//     if (isOpen && paperId) {
-//       QuestionPaperServices.getSectionsByPaper(paperId).then((res) => {
-//         const data = Array.isArray(res) ? res : (res.results || []);
-//         setSections(data);
-//       });
-//     }
-//   }, [isOpen, paperId]);
-
-//   const form = useForm({
-//     defaultValues: {
-//       section: sectionId || "",
-//       question_type: "short",
-//       question: "",
-//       description: "",
-//       marks: 0,
-//       order: 1,
-//       status: "draft",
-//       image: null,
-//     },
-//   });
-
-//   // 2. Edit मा form populate गर्ने — यही नै main fix हो
-//   useEffect(() => {
-//     if (isOpen) {
-//       if (initialData) {
-//         form.reset({
-//           section: initialData.section || sectionId || "",
-//           question_type: initialData.question_type || "short",
-//           question: initialData.question || "",
-//           description: initialData.description || "",
-//           marks: initialData.marks || 0,
-//           order: initialData.order || 1,
-//           status: initialData.status || "draft",
-//           image: null,
-//         });
-//         if (initialData.image) setPreviewImage(initialData.image);
-//       } else {
-//         // Add mode — blank form
-//         form.reset({
-//           section: sectionId || "",
-//           question_type: "short",
-//           question: "",
-//           description: "",
-//           marks: 0,
-//           order: 1,
-//           status: "draft",
-//           image: null,
-          
-//         });
-
-//         setFileList([]); // Clear Upload list
-//         setPreviewImage(null)
-        
-//       }
-//     }
-//   }, [initialData, isOpen]);
-
-
-//   const handleFileChange = (file: any) => {
-//     // 1. Form state मा फाइल सेट गर्ने
-//     form.setValue("image", file);
-    
-//     // 2. Preview को लागि URL बनाउने
-//     if (file) {
-//       const reader = new FileReader();
-//       reader.onload = (e) => setPreviewImage(e.target?.result as string);
-//       reader.readAsDataURL(file);
-//     }
-//     return false; // Antd को default upload रोक्न
-//   };
-
-
-
-//   const onSubmit = async (values: any) => {
-//     setLoading(true);
-//     const formData = new FormData();
-//     Object.keys(values).forEach(key => {
-//       if (values[key] !== null && values[key] !== undefined) {
-//         formData.append(key, values[key]);
-//       }
-//     });
-
-//     try {
-//       if (isUpdate) {
-//         await QuestionPaperServices.updateQuestion(initialData.id, formData);
-//         toast.success("Question updated");
-//       } else {
-//         await QuestionPaperServices.createQuestion(formData);
-//         toast.success("Question created");
-//       }
-//       onSuccess?.();
-//     } catch {
-//       toast.error("Failed to save");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <>
-//       <div onClick={onClose} className={`fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
-//       <div className={`fixed inset-0 z-[101] flex items-center justify-center p-4 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-//         <div className="w-full max-w-xl bg-white rounded shadow-xl border border-gray-200 overflow-hidden">
-//           <ConfigProvider theme={{ token: { colorPrimary: primaryColor } }}>
-//             <div className="bg-white px-4 py-3 border-b flex justify-between items-center">
-//               <h2 className="text-sm font-bold flex items-center gap-2">
-//                 <FileQuestion size={15} /> {isUpdate ? "Edit" : "Add"} Question
-//               </h2>
-//               <button onClick={onClose}><X size={20} /></button>
-//             </div>
-
-//             <Form {...form}>
-//               <form onSubmit={form.handleSubmit(onSubmit)} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
-                
-//                 <FormItem>
-//                   <label className="text-[11px] font-bold uppercase text-gray-500">Section</label>
-//                   <Controller
-//                     name="section"
-//                     control={form.control}
-//                     render={({ field }) => (
-//                       <Select
-//                         {...field}
-//                         className="w-full"
-//                         placeholder="Select a section"
-//                         value={field.value || undefined}
-//                         options={sections.map((s) => ({ label: s.title, value: s.id }))}
-//                       />
-//                     )}
-//                   />
-//                 </FormItem>
-
-//                 <div className="grid grid-cols-3 gap-4">
-//                   <FormItem className="col-span-1">
-//                     <label className="text-[11px] font-bold uppercase text-gray-500">Type</label>
-//                     <Controller name="question_type" control={form.control} render={({ field }) => <Select {...field} className="w-full" options={QUESTION_TYPES} />} />
-//                   </FormItem>
-//                   <FormItem className="col-span-1">
-//                     <label className="text-[11px] font-bold uppercase text-gray-500">Marks</label>
-//                     <Controller name="marks" control={form.control} render={({ field }) => <InputNumber {...field} className="w-full" />} />
-//                   </FormItem>
-//                   <FormItem className="col-span-1">
-//                     <label className="text-[11px] font-bold uppercase text-gray-500">Status</label>
-//                     <Controller name="status" control={form.control} render={({ field }) => <Select {...field} className="w-full" options={STATUS_CHOICES} />} />
-//                   </FormItem>
-//                 </div>
-
-//                 <FormItem>
-//                   <label className="text-[11px] font-bold uppercase text-gray-500">Question Content</label>
-//                   <Controller name="question" control={form.control} render={({ field }) => <Input.TextArea {...field} rows={3} />} />
-//                 </FormItem>
-
-//                 <FormItem>
-//                   <label className="text-[11px] font-bold uppercase text-gray-500">Guideline / Description</label>
-//                   <Controller name="description" control={form.control} render={({ field }) => <Input.TextArea {...field} rows={2} />} />
-//                 </FormItem>
-
-//                <FormItem>
-//       <label className="text-[11px] font-bold uppercase text-gray-500">Question Image</label>
-//       <div className="flex items-center gap-4">
-//         <Controller name="image" control={form.control} render={({ field: { onChange } }) => (
-//           <AntdUpload 
-//             beforeUpload={(file) => { handleFileChange(file); return false; }} 
-//             maxCount={1}
-//             fileList={fileList}
-//             onRemove={() => { setPreviewImage(null); form.setValue("image", null); setFileList([]); }}
-//           >
-//             <ThemedButton type="button" size="sm" className="flex gap-2">
-//               <Upload size={14} /> Upload
-//             </ThemedButton>
-//           </AntdUpload>
-//         )} />
-        
-//         {/* Preview Box */}
-//         {previewImage && (
-//           <div className="w-16 h-16 border rounded overflow-hidden">
-//             <img src={previewImage} alt="preview" className="w-full h-full object-cover" />
-//           </div>
-//         )}
-//       </div>
-//     </FormItem>
-//                 <div className="flex justify-end gap-3 pt-4 border-t">
-//                   <CancelButton onClick={onClose} />
-//                   <ThemedButton type="submit" disabled={loading}>
-//                     {loading ? <Loader2 className="animate-spin" /> : "Save Question"}
-//                   </ThemedButton>
-//                 </div>
-//               </form>
-//             </Form>
-//           </ConfigProvider>
-//         </div>
-//       </div>
-//     </>
-//   );
-// }
-
 
 "use client";
 
@@ -312,41 +74,81 @@ export default function QuestionForm({
   });
 
   // ── Reset form when modal opens / edit data changes ───────────────────────
-  useEffect(() => {
-    if (!isOpen) return;
+  // useEffect(() => {
+  //   if (!isOpen) return;
 
-    if (initialData) {
-      const editPaperId = initialData.paper || paperId || "";
-      setSelectedPaper(editPaperId);
-      form.reset({
-        selected_paper: editPaperId,
-        section:        initialData.section       || sectionId || "",
-        question_type:  initialData.question_type || "short",
-        question:       initialData.question      || "",
-        description:    initialData.description   || "",
-        marks:          initialData.marks          || 0,
-        order:          initialData.order          || 1,
-        status:         initialData.status         || "draft",
-        image:          null,
-      });
-      if (initialData.image) setPreviewImage(initialData.image);
-    } else {
-      setSelectedPaper(paperId || "");
-      form.reset({
-        selected_paper: paperId   || "",
-        section:        sectionId || "",
-        question_type:  "short",
-        question:       "",
-        description:    "",
-        marks:          0,
-        order:          1,
-        status:         "draft",
-        image:          null,
-      });
-      setFileList([]);
-      setPreviewImage(null);
-    }
-  }, [initialData, isOpen]);
+  //   if (initialData) {
+  //     const editPaperId = initialData.paper || paperId || "";
+  //     setSelectedPaper(editPaperId);
+  //     form.reset({
+  //       selected_paper: editPaperId,
+  //       section:        initialData.section       || sectionId || "",
+  //       question_type:  initialData.question_type || "short",
+  //       question:       initialData.question      || "",
+  //       description:    initialData.description   || "",
+  //       marks:          initialData.marks          || 0,
+  //       order:          initialData.order          || 1,
+  //       status:         initialData.status         || "draft",
+  //       image:          null,
+  //     });
+  //     if (initialData.image) setPreviewImage(initialData.image);
+  //   } else {
+  //     setSelectedPaper(paperId || "");
+  //     form.reset({
+  //       selected_paper: paperId   || "",
+  //       section:        sectionId || "",
+  //       question_type:  "short",
+  //       question:       "",
+  //       description:    "",
+  //       marks:          0,
+  //       order:          1,
+  //       status:         "draft",
+  //       image:          null,
+  //     });
+  //     setFileList([]);
+  //     setPreviewImage(null);
+  //   }
+  // }, [initialData, isOpen]);
+
+
+  useEffect(() => {
+  if (!isOpen) return;
+
+  if (initialData) {
+    // यो Edit मोड हो - डेटा सेट गर्ने
+    const editPaperId = initialData.paper || paperId || "";
+    setSelectedPaper(editPaperId);
+    form.reset({
+      selected_paper: editPaperId,
+      section: initialData.section || sectionId || "",
+      question_type: initialData.question_type || "short",
+      question: initialData.question || "",
+      description: initialData.description || "",
+      marks: initialData.marks || 0,
+      order: initialData.order || 1,
+      status: initialData.status || "draft",
+      image: null,
+    });
+    if (initialData.image) setPreviewImage(initialData.image);
+  } else {
+    // यो Add मोड हो - फर्म खाली राख्ने
+    // यदि तपाईँ "Add" बटन थिच्दा प्रि-सेलेक्टेड पेपर/सेक्सन चाहनुहुन्न भने यी भ्यालुहरू हटाउनुहोस्:
+    setSelectedPaper(""); 
+    form.reset({
+      selected_paper: "",
+      section: "",
+      question_type: "short",
+      question: "",
+      description: "",
+      marks: 0,
+      order: 1,
+      status: "draft",
+      image: null,
+    });
+    setFileList([]);
+    setPreviewImage(null);
+  }
+}, [initialData, isOpen]); // यहाँ paperId र sectionId निर्भरता (dependency) मा नराख्नुहोस्, अन्यथा लूप हुन सक्छ।
 
   // ── Filtered sections based on selected paper ─────────────────────────────
   const filteredSections = selectedPaper
@@ -409,13 +211,14 @@ export default function QuestionForm({
               <h2 className="text-sm font-bold flex items-center gap-2">
                 <FileQuestion size={15} /> {isUpdate ? "Edit" : "Add"} Question
               </h2>
-              <button onClick={onClose}><X size={20} /></button>
+                            <button onClick={onClose} className="text-red-500 hover:rotate-90 transition-transform">
+                 <X size={20} /></button>
             </div>
 
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto"
+                className="p-3 space-y-2 max-h-[80vh] overflow-y-auto"
               >
 
                 {/* ── Paper + Section in same row ── */}

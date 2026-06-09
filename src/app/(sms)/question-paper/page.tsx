@@ -14,7 +14,6 @@ const CURRENT_SECTION_ID = 1;
 const CURRENT_PAPER_ID = 1;
 
 export default function QuestionPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -56,7 +55,7 @@ const handleEdit = (question: any) => {
           <div className="relative">
             <ThemedInput
               type="text"
-              placeholder="Search questions..."
+              placeholder="Search questions subject..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={<Search size={15} />}
@@ -92,7 +91,6 @@ const handleEdit = (question: any) => {
       {/* Table Section */}
       <div className="mt-2">
         <QuestionTable
-          sectionId={CURRENT_SECTION_ID}
           onEdit={handleEdit}
           refreshTrigger={refreshTrigger}
           searchQuery={searchQuery}

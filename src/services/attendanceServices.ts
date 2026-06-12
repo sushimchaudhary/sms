@@ -16,6 +16,11 @@ export const AttendanceServices = {
   // ===============================
   // 📌 STUDENT ATTENDANCE
   // ===============================
+
+
+  
+
+
   getStudentAttendance: async (params?: { search?: string; page?: number; limit?: number }) => {
     if (studentAttendanceCache && !params?.search && !params?.page) {
       return studentAttendanceCache;
@@ -81,6 +86,9 @@ export const AttendanceServices = {
   // ===============================
   // 📌 STAFF ATTENDANCE
   // ===============================
+
+
+ 
   getStaffAttendance: async (params?: { search?: string; page?: number; limit?: number }) => {
     if (staffAttendanceCache && !params?.search && !params?.page) {
       return staffAttendanceCache;

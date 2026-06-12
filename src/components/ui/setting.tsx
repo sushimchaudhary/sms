@@ -8,10 +8,7 @@ import axiosInstance from "@/lib/config/axios.config";
 import { Modal } from "antd";
 import { ExclamationCircleFilled } from "@ant-design/icons";
 import { logoutAction } from "@/action/auth";
-import { useTranslations } from "next-intl";
-import { Globe } from "lucide-react";
 import { useLanguage } from "@/lib/context/LanguageContext";
-import { label } from "framer-motion/m";
 import { useT } from "@/lib/hooks/useT";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -555,7 +552,7 @@ export default function SettingsDrawer({
         <div className="p-5 space-y-6 overflow-y-auto h-full pb-24 text-xs">
 
           {/* ── LANGUAGE SWITCHER ── */}
-          <div>
+          {/* <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
               {tLanguage}
             </label>
@@ -585,7 +582,7 @@ export default function SettingsDrawer({
                 {tLoading}
               </p>
             )}
-          </div>
+          </div> */}
 
           {/* ── COLOR SCHEME ── */}
           <div>

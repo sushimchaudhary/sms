@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Token chaina bhane
   if (!token) {
-    if (pathname !== '/login' && pathname !== '/register') {
+    if (pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     return NextResponse.next();

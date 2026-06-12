@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/lib/context/LanguageContext";
 import { TranslationProvider } from "@/lib/context/TranslationContext";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import GoogleTranslate from "@/components/languageTranslate/GoogleTranslate";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -103,11 +104,17 @@ export default async function RootLayout({
         />
 
          <NextIntlClientProvider messages={messages}>
-          <LanguageProvider>
+          <GoogleTranslate /> 
+                      <ThemeProvider>{children}</ThemeProvider>
+
+
+          {/* <LanguageProvider>
+                    
+
             <TranslationProvider >
             <ThemeProvider>{children}</ThemeProvider>
             </TranslationProvider>
-          </LanguageProvider>
+          </LanguageProvider> */}
         </NextIntlClientProvider>
       
       </body>

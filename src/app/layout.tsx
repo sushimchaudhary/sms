@@ -105,16 +105,13 @@ export default async function RootLayout({
 
          <NextIntlClientProvider messages={messages}>
           <GoogleTranslate /> 
-                      <ThemeProvider>{children}</ThemeProvider>
-
-
-          {/* <LanguageProvider>
-                    
-
+            <ThemeProvider>{children}</ThemeProvider>
+          {/* <LanguageProvider>                 
             <TranslationProvider >
             <ThemeProvider>{children}</ThemeProvider>
             </TranslationProvider>
           </LanguageProvider> */}
+
         </NextIntlClientProvider>
       
       </body>

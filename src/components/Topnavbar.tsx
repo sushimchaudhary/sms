@@ -568,7 +568,7 @@ export default function TopNavbar({
               color: primaryColor 
             }}
           >
-            <GlobeLock className="w-4 h-4" style={{ color: primaryColor }} />
+            <Globe className="w-4 h-4" style={{ color: primaryColor }} />
             <span>{selectedLang.label}</span>
             <ChevronDown
               className={`w-3 h-3 transition-transform ${langOpen ? "rotate-180" : ""}`}

@@ -175,8 +175,6 @@
 //   );
 // }
 
-
-
 "use client";
 
 import React, { useState, useRef } from "react";
@@ -404,23 +402,36 @@ export default function LoginPage() {
                 </div>
 
                 {/* ─── reCAPTCHA v2 Checkbox ────────────────────────────────── */}
-                <div className="flex flex-col items-start gap-1 pt-1">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                    onChange={(token) => {
-                      setRecaptchaToken(token);
-                      if (token) setCaptchaError("");
-                    }}
-                    onExpired={() => {
-                      setRecaptchaToken(null);
-                      setCaptchaError("CAPTCHA expired — please verify again.");
-                    }}
-                    onErrored={() => {
-                      setRecaptchaToken(null);
-                      setCaptchaError("CAPTCHA error — please try again.");
-                    }}
-                  />
+                <div className="flex flex-col gap-1 pt-1">
+                  {/* Scale the fixed 304px widget to fill the form width */}
+                  <div style={{ width: "100%", overflow: "hidden", borderRadius: "4px" }}>
+                    <div
+                      style={{ width: "304px", transformOrigin: "left center" }}
+                      ref={(el) => {
+                        if (el) {
+                          const parentWidth = el.parentElement?.offsetWidth ?? 304;
+                          el.style.transform = `scaleX(${parentWidth / 304})`;
+                        }
+                      }}
+                    >
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                        onChange={(token) => {
+                          setRecaptchaToken(token);
+                          if (token) setCaptchaError("");
+                        }}
+                        onExpired={() => {
+                          setRecaptchaToken(null);
+                          setCaptchaError("CAPTCHA expired — please verify again.");
+                        }}
+                        onErrored={() => {
+                          setRecaptchaToken(null);
+                          setCaptchaError("CAPTCHA error — please try again.");
+                        }}
+                      />
+                    </div>
+                  </div>
                   {captchaError && (
                     <p className="text-[11px] text-red-500 font-medium mt-0.5">
                       {captchaError}

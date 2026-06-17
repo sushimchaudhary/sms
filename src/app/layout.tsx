@@ -3,12 +3,9 @@ import { Nunito } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
 import { Toaster } from "sonner";
-import { LanguageProvider } from "@/lib/context/LanguageContext";
-import { TranslationProvider } from "@/lib/context/TranslationContext";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import GoogleTranslate from "@/components/languageTranslate/GoogleTranslate";
-import RecaptchaProvider from "@/components/RecaptchaProvider";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -106,9 +103,9 @@ export default async function RootLayout({
 
          <NextIntlClientProvider messages={messages}>
           <GoogleTranslate /> 
-            <RecaptchaProvider>
+           
                <ThemeProvider>{children}</ThemeProvider>
-            </RecaptchaProvider>
+            
           {/* <LanguageProvider>                 
             <TranslationProvider >
             <ThemeProvider>{children}</ThemeProvider>

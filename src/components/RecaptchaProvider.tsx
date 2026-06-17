@@ -1,17 +1,28 @@
 "use client";
 
-import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
+import ReCAPTCHA from "react-google-recaptcha";
+import { forwardRef } from "react";
 
-export default function RecaptchaProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <GoogleReCaptchaProvider
-      reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-    >
-      {children}
-    </GoogleReCaptchaProvider>
-  );
+interface RecaptchaV2Props {
+  onChange: (token: string | null) => void;
+  onExpired?: () => void;
+  onError?: () => void;
 }
+
+const RecaptchaV2 = forwardRef<ReCAPTCHA, RecaptchaV2Props>(
+  ({ onChange, onExpired, onError }, ref) => {
+    return (
+      <ReCAPTCHA
+        ref={ref}
+        sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+        onChange={onChange}
+        onExpired={onExpired}
+        onError={onError}
+      />
+    );
+  }
+);
+
+RecaptchaV2.displayName = "RecaptchaV2";
+
+export default RecaptchaV2;

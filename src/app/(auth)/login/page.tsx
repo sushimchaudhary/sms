@@ -179,7 +179,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginDTO } from "../../../types/authType";
@@ -198,14 +198,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { UserServices } from "@/services/authServices";
 import PublicSection from "@/components/PublicSection";
-import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
-
-// ─── Wrap your app with GoogleReCaptchaProvider in layout.tsx ──────────────
-// import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
-// <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}>
-//   {children}
-// </GoogleReCaptchaProvider>
-// ──────────────────────────────────────────────────────────────────────────
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -214,8 +207,10 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ─── reCAPTCHA v3 ─────────────────────────────────────────────────────────
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  // ─── reCAPTCHA v2 state ────────────────────────────────────────────────────
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string>("");
   // ──────────────────────────────────────────────────────────────────────────
 
   const form = useForm({
@@ -243,63 +238,58 @@ export default function LoginPage() {
     }
   };
 
-  const onSubmit = useCallback(
-    async (data: any) => {
-      // ─── Get reCAPTCHA v3 token silently (no user interaction needed) ────
-      if (!executeRecaptcha) {
-        toast.error(<strong>reCAPTCHA not ready</strong>, {
-          description: "Please wait a moment and try again.",
-        });
-        return;
+  const onSubmit = async (data: any) => {
+    // ─── CAPTCHA guard ─────────────────────────────────────────────────────
+    if (!recaptchaToken) {
+      setCaptchaError("Please check the 'I'm not a robot' box.");
+      return;
+    }
+    setCaptchaError("");
+    // ──────────────────────────────────────────────────────────────────────
+
+    setIsLoading(true);
+    try {
+      await clearAuthCookies();
+
+      const apiResponse = await UserServices.login({
+        ...data,
+        recaptchaToken, // send to backend for optional server-side verify
+      });
+
+      console.log("Full API Response:", apiResponse);
+
+      const token = apiResponse.access || apiResponse.token;
+      const userData = apiResponse.user;
+
+      if (!token) {
+        console.error("Token missing in response keys.");
+        throw new Error("Access token missing from backend response");
       }
 
-      setIsLoading(true);
+      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      await setAuthCookies(token, userData, data.remember);
 
-      try {
-        // "login" is the action name — visible in your reCAPTCHA dashboard
-        const recaptchaToken = await executeRecaptcha("login");
+      if (getLoggedInUser) await getLoggedInUser();
 
-        await clearAuthCookies();
+      toast.success(<strong>Welcome back!</strong>, {
+        description: `Logged in successfully`,
+      });
 
-        const apiResponse = await UserServices.login({
-          ...data,
-          recaptchaToken, // ← send to backend for score verification
-        });
+      console.log("User Role:", userData.role);
+      handleRedirect(userData.role);
+      router.refresh();
+    } catch (error: any) {
+      console.error("Login logical error:", error);
+      const errorMsg = UserServices.parseError(error);
+      toast.error(<strong>Login failed !!</strong>, { description: errorMsg });
 
-        console.log("Full API Response:", apiResponse);
-
-        const token = apiResponse.access || apiResponse.token;
-        const userData = apiResponse.user;
-
-        if (!token) {
-          console.error("Token missing in response keys.");
-          throw new Error("Access token missing from backend response");
-        }
-
-        axiosInstance.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${token}`;
-        await setAuthCookies(token, userData, data.remember);
-
-        if (getLoggedInUser) await getLoggedInUser();
-
-        toast.success(<strong>Welcome back!</strong>, {
-          description: `Logged in successfully`,
-        });
-
-        console.log("User Role:", userData.role);
-        handleRedirect(userData.role);
-        router.refresh();
-      } catch (error: any) {
-        console.error("Login logical error:", error);
-        const errorMsg = UserServices.parseError(error);
-        toast.error(<strong>Login failed !!</strong>, { description: errorMsg });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [executeRecaptcha, getLoggedInUser, router]
-  );
+      // Reset CAPTCHA after failed login so user must re-check
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <ConfigProvider
@@ -413,14 +403,36 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                {/* ─── reCAPTCHA v3 is invisible — no widget shown to user ── */}
-                {/* Token is fetched automatically on submit via executeRecaptcha */}
-                {/* A small "protected by reCAPTCHA" badge shows in bottom-right */}
+                {/* ─── reCAPTCHA v2 Checkbox ────────────────────────────────── */}
+                <div className="flex flex-col items-start gap-1 pt-1">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                    onChange={(token) => {
+                      setRecaptchaToken(token);
+                      if (token) setCaptchaError("");
+                    }}
+                    onExpired={() => {
+                      setRecaptchaToken(null);
+                      setCaptchaError("CAPTCHA expired — please verify again.");
+                    }}
+                    onErrored={() => {
+                      setRecaptchaToken(null);
+                      setCaptchaError("CAPTCHA error — please try again.");
+                    }}
+                  />
+                  {captchaError && (
+                    <p className="text-[11px] text-red-500 font-medium mt-0.5">
+                      {captchaError}
+                    </p>
+                  )}
+                </div>
+                {/* ─────────────────────────────────────────────────────────── */}
 
-                {/* Submit */}
+                {/* Submit — disabled until CAPTCHA is checked */}
                 <ThemedButton
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !recaptchaToken}
                   className="w-full h-9 mt-4 text-sm font-bold shadow-md flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
@@ -435,29 +447,7 @@ export default function LoginPage() {
                   )}
                 </ThemedButton>
 
-                {/* reCAPTCHA v3 branding (required by Google ToS) */}
-                <p className="text-center text-[10px] text-gray-400 mt-2">
-                  Protected by reCAPTCHA —{" "}
-                  <a
-                    href="https://policies.google.com/privacy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-gray-600"
-                  >
-                    Privacy
-                  </a>{" "}
-                  &{" "}
-                  <a
-                    href="https://policies.google.com/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-gray-600"
-                  >
-                    Terms
-                  </a>
-                </p>
-
-                <p className="text-center text-[12px] text-gray-400 mt-1">
+                <p className="text-center text-[12px] text-gray-400 mt-4">
                   © {new Date().getFullYear()} School Management System.
                 </p>
               </form>

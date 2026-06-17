@@ -218,7 +218,7 @@ const ExpenseTable = ({
   };
 
   return (
-    <div className="space-y-3 font-mukta">
+    <div className="space-y-3 ">
       {/* Table Container */}
       <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto max-h-[450px] scrollbar-hide relative">

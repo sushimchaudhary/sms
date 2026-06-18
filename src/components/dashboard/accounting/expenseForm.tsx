@@ -57,12 +57,13 @@ const bsToADValue = (bsStr: string): string => {
 
 
 interface ExpenseFormValues {
-  title: string;
+  title: string;  
   expense_type: string;
   amount: number;
   date: string | null;
   session: string | number | null;
   school: string | number;
+  bill_file?: FileList | string | null;
 }
 
 export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }: any) {
@@ -71,10 +72,12 @@ export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }:
   const { loggedInUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
 
   const form = useForm<ExpenseFormValues>({
     defaultValues: {
       title: "",
+      bill_file: null,
       expense_type: "",
       amount: 0,
       date: dayjs().format("YYYY-MM-DD"),
@@ -116,37 +119,54 @@ export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }:
       reset({
         title: initialData?.title || "",
         expense_type: initialData?.expense_type || "",
+        bill_file: null,
         amount: Number(initialData?.amount) || 0,
         date: initialData?.date ? dayjs(initialData.date).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
         session: initialData?.session?.id || initialData?.session || null,
         school: loggedInUser?.school_id || "",
       });
+      setExistingFileUrl(initialData?.bill_file_url || null);
     }
   }, [initialData, isOpen, loggedInUser, reset]);
 
-  const onSubmit = async (values: ExpenseFormValues) => {
-    setLoading(true);
-    const payload = {
-      ...values,
-      date: values.date ? values.date : null,
-      school: loggedInUser?.school_id,
-    };
+const onSubmit = async (values: ExpenseFormValues) => {
+  // Guard against missing user info
+  if (!loggedInUser?.school_id) {
+    toast.error("School information is missing. Please log in again.");
+    return;
+  }
 
-    try {
-      if (isUpdate) {
-        await FeeServices.updateExpense(initialData.id, payload);
-      } else {
-        await FeeServices.createExpense(payload);
-      }
-      toast.success(isUpdate ? "Expense updated" : "Expense saved successfully");
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      toast.error("Error saving expense record");
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  
+  const formData = new FormData();
+  formData.append("title", values.title);
+  formData.append("expense_type", values.expense_type);
+  formData.append("amount", values.amount.toString());
+  formData.append("date", values.date || "");
+  formData.append("session", values.session?.toString() || "");
+  // Use the safe value
+  formData.append("school", loggedInUser.school_id.toString());
+
+  // Append file only if valid
+  if (values.bill_file instanceof FileList && values.bill_file.length > 0) {
+    formData.append("bill_file", values.bill_file[0]);
+  }
+
+  try {
+    if (isUpdate) {
+      await FeeServices.updateExpense(initialData.id, formData);
+    } else {
+      await FeeServices.createExpense(formData);
     }
-  };
+    toast.success(isUpdate ? "Expense updated" : "Expense saved successfully");
+    onSuccess();
+    onClose();
+  } catch (err: any) {
+    toast.error("Error saving expense record");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <>
@@ -169,6 +189,35 @@ export default function ExpenseForm({ initialData, onClose, onSuccess, isOpen }:
             <Form {...form}>
               <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
                 
+ <FormItem>
+  <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">
+    <FileText size={12} className="text-purple-500" /> Upload Bill
+  </label>
+  
+  {/* यदि फाइल छ भने लिंक देखाउनुहोस् */}
+  {existingFileUrl && (
+    <div className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] flex justify-between items-center">
+      <a href={existingFileUrl} target="_blank" className="text-blue-600 underline">
+        View Current File
+      </a>
+      <button 
+        type="button" 
+        className="text-red-500" 
+        onClick={() => setExistingFileUrl(null)}
+      >
+        Remove
+      </button>
+    </div>
+  )}
+
+  <input
+    type="file"
+    {...form.register("bill_file")}
+    className="w-full h-[35px] border border-gray-300 rounded px-2 py-1 text-sm"
+    accept="image/*,.pdf"
+  />
+</FormItem>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormItem>
                     <label className="text-[12px] font-bold text-gray-700 mb-1 flex items-center gap-2">

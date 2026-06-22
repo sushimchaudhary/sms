@@ -315,7 +315,11 @@ export default function LandingPage() {
         {/* Logo and Title Section */}
         <div className="flex items-center gap-2 md:gap-3">
           <div className="w-14 h-10 md:w-26 md:h-10 flex items-center justify-center shrink-0">
-            <Link href={"/edifynepal.com"}>
+            <Link 
+              href="https://edifynepal.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
               <Image
                 width={100}
                 height={100}

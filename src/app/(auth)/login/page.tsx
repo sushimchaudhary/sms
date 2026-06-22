@@ -456,9 +456,20 @@ export default function LoginPage() {
                   )}
                 </ThemedButton>
 
-                <p className="text-center text-[12px] text-gray-400 mt-4">
-                  © {new Date().getFullYear()} School Management System.
-                </p>
+               <div className="mt-4 text-center">
+                  {/* Copyright Text */}
+                  <p className="text-[12px] text-gray-400">
+                    © {new Date().getFullYear()} School Management System.
+                  </p>
+                  
+                  {/* Go to Home Link */}
+                  <Link 
+                    href="/" 
+                    className="text-[12px] text-[#2b98e1] hover:underline font-medium mt-1 block"
+                  >
+                    Go to Home
+                  </Link>
+                </div>
               </form>
             </Form>
           </div>

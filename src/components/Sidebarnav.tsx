@@ -94,10 +94,10 @@ const SUPERADMIN_GROUPS: MenuGroup[] = [
   {
     groupKey: "main",
     items: [
-      { icon: LayoutDashboard, labelKey: "dashboard", href: "/dashboard" },
-      { icon: School,          labelKey: "school",    href: "/school" },
-      { icon: User,            labelKey: "user",      href: "/user-management" },
-      { icon: Calendar,        labelKey: "academicCalendar", href: "/academic-calendar" },
+      { icon: LayoutDashboard, labelKey: "nav.dashboard", href: "/dashboard" },
+      { icon: School,          labelKey: "nav.school",    href: "/school" },
+      { icon: User,            labelKey: "nav.user",      href: "/user-management" },
+      { icon: Calendar,        labelKey: "nav.academicCalendar", href: "/academic-calendar" },
     ],
   },
 ];
@@ -106,28 +106,28 @@ const SCHOOL_ADMIN_GROUPS: MenuGroup[] = [
   {
     groupKey: "main",
     items: [
-      { icon: LayoutDashboard, labelKey: "dashboard",      href: "/dashboard" },
-      { icon: CalendarClock,   labelKey: "academicSession", href: "/sessions" },
+      { icon: LayoutDashboard, labelKey: "nav.dashboard",      href: "/dashboard" },
+      { icon: CalendarClock,   labelKey: "nav.academicSession", href: "/sessions" },
       {
         icon: GraduationCap,
-        labelKey: "academics",
+        labelKey: "nav.academics",
         href: "#",
         submenu: [
-          { labelKey: "class",             href: "/class",           icon: Layers },
-          { labelKey: "section",           href: "/section",         icon: LayoutGrid },
-          { labelKey: "subject",           href: "/subject",         icon: BookMarked },
-          { labelKey: "teacherAssignment", href: "/teacher-subject", icon: ClipboardCheck },
+          { labelKey: "nav.class",             href: "/class",           icon: Layers },
+          { labelKey: "nav.section",           href: "/section",         icon: LayoutGrid },
+          { labelKey: "nav.subject",           href: "/subject",         icon: BookMarked },
+          { labelKey: "nav.teacherAssignment", href: "/teacher-subject", icon: ClipboardCheck },
         ],
       },
       {
         icon: Users2,
-        labelKey: "userManagement",
+        labelKey: "nav.userManagement",
         href: "/school",
         submenu: [
-          { labelKey: "teachers",     href: "/teacher", icon: GraduationCap },
-          { labelKey: "staffMembers", href: "/staff",   icon: ShieldCheck },
-          { labelKey: "parents",      href: "/parent",  icon: Users },
-          { labelKey: "students",     href: "/student", icon: BookOpen },
+          { labelKey: "nav.teachers",     href: "/teacher", icon: GraduationCap },
+          { labelKey: "nav.staffMembers", href: "/staff",   icon: ShieldCheck },
+          { labelKey: "nav.parents",      href: "/parent",  icon: Users },
+          { labelKey: "nav.students",     href: "/student", icon: BookOpen },
         ],
       },
     ],
@@ -135,37 +135,37 @@ const SCHOOL_ADMIN_GROUPS: MenuGroup[] = [
   {
     groupKey: "operations",
     items: [
-      { icon: UserPlus,    labelKey: "enrollment", href: "/student-enrollment" },
-      { icon: UserPlus,    labelKey: "admissions", href: "/student-admissions" },
+      { icon: UserPlus,    labelKey: "nav.enrollment", href: "/student-enrollment" },
+      { icon: UserPlus,    labelKey: "nav.admissions", href: "/student-admissions" },
       {
         icon: CalendarCheck,
-        labelKey: "attendance",
+        labelKey: "nav.attendance",
         href: "#",
         submenu: [
-          { labelKey: "staffAttendance",   href: "/attendance/staff-attendance",   icon: UserCheck },
-          { labelKey: "studentAttendance", href: "/attendance/student-attendance", icon: GraduationCap },
+          { labelKey: "nav.staffAttendance",   href: "/attendance/staff-attendance",   icon: UserCheck },
+          { labelKey: "nav.studentAttendance", href: "/attendance/student-attendance", icon: GraduationCap },
         ],
       },
      
       {
         icon: CalendarDays,
-        labelKey: "leaveManagement",
+        labelKey: "nav.leaveManagement",
         href: "#",
         submenu: [
-          { labelKey: "leaveAllocation",  href: "/leave-allocation",  icon: User },
-          { labelKey: "leaveApplication", href: "/leave-application", icon: CalendarDays },
+          { labelKey: "nav.leaveAllocation",  href: "/leave-allocation",  icon: User },
+          { labelKey: "nav.leaveApplication", href: "/leave-application", icon: CalendarDays },
         ],
       },
 
        {
   icon: BookOpen, // मुख्य मेनुको लागि
-  labelKey: "questionPaperManagement",
+  labelKey: "nav.questionPaperManagement",
   href: "#",
   submenu: [
-    { labelKey: "questionPaper", href: "/paper-template", icon: LayoutTemplate },
-    { labelKey: "questionSection", href: "/question-section", icon: Layers },
-    { labelKey: "question", href: "/question-paper", icon: FileText },
-    { labelKey: "allinone", href: "/all-in-one-paper", icon: ClipboardList },
+    { labelKey: "nav.questionPaper", href: "/paper-template", icon: LayoutTemplate },
+    { labelKey: "nav.questionSection", href: "/question-section", icon: Layers },
+    { labelKey: "nav.question", href: "/question-paper", icon: FileText },
+    { labelKey: "nav.allinone", href: "/all-in-one-paper", icon: ClipboardList },
   ],
 },
     ],
@@ -175,14 +175,14 @@ const SCHOOL_ADMIN_GROUPS: MenuGroup[] = [
     items: [
       {
         icon: WalletCards,
-        labelKey: "accounts",
+        labelKey: "nav.accounts",
         href: "#",
         submenu: [
-          { labelKey: "feeTypes",          href: "/fee-type",       icon: Tag },
-          { labelKey: "feeStructure",      href: "/fee-structure",  icon: Banknote },
-          { labelKey: "studentFee",        href: "/student-fee",    icon: WalletCards },
-          { labelKey: "paymentRecords",    href: "/payment-record", icon: ClipboardCheck },
-          { labelKey: "expenseManagement", href: "/expense",        icon: Receipt },
+          { labelKey: "nav.feeTypes",          href: "/fee-type",       icon: Tag },
+          { labelKey: "nav.feeStructure",      href: "/fee-structure",  icon: Banknote },
+          { labelKey: "nav.studentFee",        href: "/student-fee",    icon: WalletCards },
+          { labelKey: "nav.paymentRecords",    href: "/payment-record", icon: ClipboardCheck },
+          { labelKey: "nav.expenseManagement", href: "/expense",        icon: Receipt },
         ],
       },
     ],
@@ -190,24 +190,24 @@ const SCHOOL_ADMIN_GROUPS: MenuGroup[] = [
   {
     groupKey: "communication",
     items: [
-            { icon: Calendar, labelKey: "academicCalendar", href: "/academic-calendar" },
+            { icon: Calendar, labelKey: "nav.academicCalendar", href: "/academic-calendar" },
 
       {
         icon: BookMarked,
-        labelKey: "notesHomework",
+        labelKey: "nav.notesHomework",
         href: "#",
         submenu: [
-          { labelKey: "homeWorks", href: "/homework", icon: Tag },
-          { labelKey: "notes",     href: "/notes",    icon: BookOpen },
+          { labelKey: "nav.homeWorks", href: "/homework", icon: Tag },
+          { labelKey: "nav.notes",     href: "/notes",    icon: BookOpen },
         ],
       },
       {
         icon: Bell,
-        labelKey: "notifications",
+        labelKey: "nav.notifications",
         href: "#",
         submenu: [
-          { labelKey: "allNotifications", href: "/notification", icon: Bell },
-          { labelKey: "complaints",       href: "/complaint",    icon: MessageSquareWarning },
+          { labelKey: "nav.allNotifications", href: "/notification", icon: Bell },
+          { labelKey: "nav.complaints",       href: "/complaint",    icon: MessageSquareWarning },
         ],
       },
     ],
@@ -218,7 +218,7 @@ const TEACHER_GROUPS: MenuGroup[] = [
   {
     groupKey: "main",
     items: [
-      { icon: LayoutDashboard, labelKey: "dashboard", href: "/teacher-dashboard" },
+      { icon: LayoutDashboard, labelKey: "nav.dashboard", href: "/teacher-dashboard" },
     ],
   },
   {
@@ -226,26 +226,26 @@ const TEACHER_GROUPS: MenuGroup[] = [
     items: [
       {
         icon: CalendarCheck,
-        labelKey: "attendance",
+        labelKey: "nav.attendance",
         href: "#",
         submenu: [
-          { labelKey: "staffAttendance",   href: "/attendance/staff-attendance",   icon: UserCheck },
-          { labelKey: "studentAttendance", href: "/attendance/student-attendance", icon: GraduationCap },
+          { labelKey: "nav.staffAttendance",   href: "/attendance/staff-attendance",   icon: UserCheck },
+          { labelKey: "nav.studentAttendance", href: "/attendance/student-attendance", icon: GraduationCap },
         ],
       },
       {
   icon: BookOpen, // मुख्य मेनुको लागि
-  labelKey: "questionPaperManagement",
+  labelKey: "nav.questionPaperManagement",
   href: "#",
   submenu: [
-    { labelKey: "questionPaper", href: "/paper-template", icon: LayoutTemplate },
-    { labelKey: "questionSection", href: "/question-section", icon: Layers },
-    { labelKey: "question", href: "/question-paper", icon: FileText },
-    { labelKey: "allinone", href: "/all-in-one-paper", icon: ClipboardList },
+    { labelKey: "nav.questionPaper", href: "/paper-template", icon: LayoutTemplate },
+    { labelKey: "nav.questionSection", href: "/question-section", icon: Layers },
+    { labelKey: "nav.question", href: "/question-paper", icon: FileText },
+    { labelKey: "nav.allinone", href: "/all-in-one-paper", icon: ClipboardList },
   ],
 },
-      { icon: CalendarDays, labelKey: "leaveApplication", href: "/leave-application" },
-      { icon: Calendar,     labelKey: "academicCalendar", href: "/academic-calendar" },
+      { icon: CalendarDays, labelKey: "nav.leaveApplication", href: "/leave-application" },
+      { icon: Calendar,     labelKey: "nav.academicCalendar", href: "/academic-calendar" },
     ],
   },
   {
@@ -253,20 +253,20 @@ const TEACHER_GROUPS: MenuGroup[] = [
     items: [
       {
         icon: BookMarked,
-        labelKey: "notesHomework",
+        labelKey: "nav.notesHomework",
         href: "#",
         submenu: [
-          { labelKey: "homeWorks", href: "/homework", icon: Tag },
-          { labelKey: "notes",     href: "/notes",    icon: BookOpen },
+          { labelKey: "nav.homeWorks", href: "/homework", icon: Tag },
+          { labelKey: "nav.notes",     href: "/notes",    icon: BookOpen },
         ],
       },
       {
         icon: Bell,
-        labelKey: "notifications",
+        labelKey: "nav.notifications",
         href: "#",
         submenu: [
-          { labelKey: "allNotifications", href: "/notification", icon: Bell },
-          { labelKey: "complaints",       href: "/complaint",    icon: MessageSquareWarning },
+          { labelKey: "nav.allNotifications", href: "/notification", icon: Bell },
+          { labelKey: "nav.complaints",       href: "/complaint",    icon: MessageSquareWarning },
         ],
       },
     ],
@@ -277,14 +277,14 @@ const STUDENT_GROUPS: MenuGroup[] = [
   {
     groupKey: "main",
     items: [
-      { icon: LayoutDashboard, labelKey: "dashboard", href: "/student-dashboard" },
+      { icon: LayoutDashboard, labelKey: "nav.dashboard", href: "/student-dashboard" },
     ],
   },
   {
     groupKey: "operations",
     items: [
-      { icon: CalendarDays,         labelKey: "leaveApplication", href: "/leave-application" },
-      { icon: Calendar,             labelKey: "academicCalendar", href: "/academic-calendar" },
+      { icon: CalendarDays,         labelKey: "nav.leaveApplication", href: "/leave-application" },
+      { icon: Calendar,             labelKey: "nav.academicCalendar", href: "/academic-calendar" },
     ],
   },
   {
@@ -292,15 +292,15 @@ const STUDENT_GROUPS: MenuGroup[] = [
     items: [
       {
         icon: BookMarked,
-        labelKey: "notesHomework",
+        labelKey: "nav.notesHomework",
         href: "#",
         submenu: [
-          { labelKey: "homeWorks", href: "/homework", icon: Tag },
-          { labelKey: "notes",     href: "/notes",    icon: BookOpen },
+          { labelKey: "nav.homeWorks", href: "/homework", icon: Tag },
+          { labelKey: "nav.notes",     href: "/notes",    icon: BookOpen },
         ],
       },
-      { icon: MessageSquareWarning, labelKey: "complaints",    href: "/complaint" },
-      { icon: Bell,                 labelKey: "notifications", href: "/notification" },
+      { icon: MessageSquareWarning, labelKey: "nav.complaints",    href: "/complaint" },
+      { icon: Bell,                 labelKey: "nav.notifications", href: "/notification" },
     ],
   },
 ];
@@ -309,15 +309,15 @@ const PARENT_GROUPS: MenuGroup[] = [
   {
     groupKey: "main",
     items: [
-      { icon: LayoutDashboard, labelKey: "dashboard", href: "/parent-dashboard" },
-      { icon: Calendar,        labelKey: "academicCalendar", href: "/academic-calendar" },
+      { icon: LayoutDashboard, labelKey: "nav.dashboard", href: "/parent-dashboard" },
+      { icon: Calendar,        labelKey: "nav.academicCalendar", href: "/academic-calendar" },
     ],
   },
   {
     groupKey: "communication",
     items: [
-      { icon: MessageSquareWarning, labelKey: "complaints",    href: "/complaint" },
-      { icon: Bell,                 labelKey: "notifications", href: "/notification" },
+      { icon: MessageSquareWarning, labelKey: "nav.complaints",    href: "/complaint" },
+      { icon: Bell,                 labelKey: "nav.notifications", href: "/notification" },
     ],
   },
 ];
@@ -326,15 +326,15 @@ const STAFF_GROUPS: MenuGroup[] = [
   {
     groupKey: "main",
     items: [
-      { icon: LayoutDashboard, labelKey: "dashboard",  href: "/staff-dashboard" },
-      { icon: CalendarCheck,   labelKey: "attendance", href: "/attendance/staff-attendance" },
+      { icon: LayoutDashboard, labelKey: "nav.dashboard",  href: "/staff-dashboard" },
+      { icon: CalendarCheck,   labelKey: "nav.attendance", href: "/attendance/staff-attendance" },
     ],
   },
   {
     groupKey: "operations",
     items: [
-      { icon: CalendarDays, labelKey: "leaveApplication", href: "/leave-application" },
-      { icon: Calendar,     labelKey: "academicCalendar", href: "/academic-calendar" },
+      { icon: CalendarDays, labelKey: "nav.leaveApplication", href: "/leave-application" },
+      { icon: Calendar,     labelKey: "nav.academicCalendar", href: "/academic-calendar" },
     ],
   },
   {
@@ -342,14 +342,14 @@ const STAFF_GROUPS: MenuGroup[] = [
     items: [
       {
         icon: WalletCards,
-        labelKey: "accounts",
+        labelKey: "nav.accounts",
         href: "#",
         submenu: [
-          { labelKey: "feeTypes",          href: "/fee-type",       icon: Tag },
-          { labelKey: "feeStructure",      href: "/fee-structure",  icon: Banknote },
-          { labelKey: "studentFee",        href: "/student-fee",    icon: WalletCards },
-          { labelKey: "paymentRecords",    href: "/payment-record", icon: ClipboardCheck },
-          { labelKey: "expenseManagement", href: "/expense",        icon: Receipt },
+          { labelKey: "nav.feeTypes",          href: "/fee-type",       icon: Tag },
+          { labelKey: "nav.feeStructure",      href: "/fee-structure",  icon: Banknote },
+          { labelKey: "nav.studentFee",        href: "/student-fee",    icon: WalletCards },
+          { labelKey: "nav.paymentRecords",    href: "/payment-record", icon: ClipboardCheck },
+          { labelKey: "nav.expenseManagement", href: "/expense",        icon: Receipt },
         ],
       },
     ],
@@ -357,8 +357,8 @@ const STAFF_GROUPS: MenuGroup[] = [
   {
     groupKey: "communication",
     items: [
-      { icon: MessageSquareWarning, labelKey: "complaints",    href: "/complaint" },
-      { icon: Bell,                 labelKey: "notifications", href: "/notification" },
+      { icon: MessageSquareWarning, labelKey: "nav.complaints",    href: "/complaint" },
+      { icon: Bell,                 labelKey: "nav.notifications", href: "/notification" },
     ],
   },
 ];
@@ -396,7 +396,7 @@ export default function SidebarNav({
 }: SidebarNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  // const t = useTranslations();
+  const t = useTranslations();
   const role = user?.role;
 
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
@@ -505,7 +505,7 @@ export default function SidebarNav({
 
   // ── Render a single menu item (shared between grouped and hover views) ────
   const renderItem = (item: MenuItem, hoverMode = false) => {
-    const label = (item.labelKey);
+    const label = t(item.labelKey);
     const isActive =
       item.href === "/dashboard"
         ? pathname === "/dashboard"
@@ -523,14 +523,14 @@ export default function SidebarNav({
               isActive
                 ? "bg-white/20 text-white font-semibold"
                 : isDarkSidebar
-                ? "text-slate-200 hover:text-white hover:bg-white/10"
-                : "text-slate-400 hover:text-slate-800 hover:bg-gray-100"
+                ? "text-slate-100 hover:text-white hover:bg-white/10"
+                : "text-slate-100 hover:text-slate-800 hover:bg-gray-100"
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
               <item.icon
                 size={16}
-                className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
+                className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-100"}`}
               />
               {labelsOn && (
                 <span className={`text-sm truncate ${isActive ? "font-semibold text-white" : ""}`}>
@@ -541,8 +541,8 @@ export default function SidebarNav({
             {labelsOn && (
               <span className="flex-shrink-0">
                 {isSubOpen
-                  ? <ChevronDown size={13} className="text-slate-400" />
-                  : <ChevronRight size={13} className="text-slate-400" />}
+                  ? <ChevronDown size={13} className="text-slate-100"/>
+                  : <ChevronRight size={13} className="text-slate-100" />}
               </span>
             )}
           </div>
@@ -550,7 +550,7 @@ export default function SidebarNav({
           {isSubOpen && labelsOn && (
             <div className="ml-4 mt-0.5 mb-1 flex flex-col gap-0.5">
               {item.submenu!.map((sub) => {
-                const subLabel   = (sub.labelKey);
+                const subLabel   = t(sub.labelKey);
                 const isSubActive =
                   pathname === sub.href || pathname.startsWith(sub.href + "/");
                 return (
@@ -560,13 +560,13 @@ export default function SidebarNav({
                         isSubActive
                           ? "bg-white/20 text-white font-semibold"
                           : isDarkSidebar
-                          ? "text-slate-300 hover:text-white hover:bg-white/10"
-                          : "text-slate-500 hover:text-slate-800 hover:bg-gray-100"
+                          ? "text-slate-100 hover:text-white hover:bg-white/10"
+                          : "text-slate-100 hover:text-slate-800 hover:bg-gray-100"
                       }`}
                     >
                       <sub.icon
                         size={13}
-                        className={`flex-shrink-0 ${isSubActive ? "text-white" : "text-slate-400"}`}
+                        className={`flex-shrink-0 ${isSubActive ? "text-white" : "text-slate-200"}`}
                       />
                       <span className="truncate">{subLabel}</span>
                     </div>
@@ -592,7 +592,7 @@ export default function SidebarNav({
         >
           <item.icon
             size={16}
-            className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
+            className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-200"}`}
           />
           {labelsOn && (
             <span className={`text-sm truncate ${isActive ? "font-semibold text-white" : ""}`}>
@@ -632,7 +632,7 @@ export default function SidebarNav({
   return (
     <aside
       className={[
-        "h-screen overflow-hidden uppercase",
+        "h-screen overflow-hidden",
         getSidebarWidth(),
         "flex-shrink-0 flex flex-col",
         "transition-all duration-300",
@@ -653,7 +653,7 @@ export default function SidebarNav({
           <div className={`flex-shrink-0 h-14 flex items-center px-4 gap-3 border-b ${isDarkSidebar ? "border-white/10" : "border-gray-100"}`}>
             <SchoolLogoOrFallback size="sm" />
             <span className="text-sm font-bold text-white tracking-wide truncate">
-              {schoolName || ("dashboard")}
+              {schoolName || t("nav.dashboard")}
             </span>
           </div>
           <nav className="flex-1 min-h-0 py-3 overflow-y-auto overflow-x-hidden" style={scrollbarStyle}>

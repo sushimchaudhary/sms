@@ -358,7 +358,7 @@ export default function LandingPage() {
           >
             <button
               className="flex items-center gap-1.5 cursor-pointer rounded px-1 md:px-3 py-1.5 text-[11px] md:text-xs font-medium border transition-colors hover:shadow-sm"
-              style={{ borderColor: primaryColor, color: primaryColor }}
+              
             >
               <Globe
                 className="w-3 h-3 md:w-4 md:h-4"
@@ -376,7 +376,7 @@ export default function LandingPage() {
           {/* Login Button */}
           <Link
             href="/login"
-            className="flex items-center gap-1.5 bg-[#2b98e1] hover:bg-blue-600 text-white text-[12px] md:text-[13px] font-medium px-1.5 py-1.5 rounded transition-colors"
+            className="flex items-center gap-1.5 bg-[#34b6d8] text-white text-[12px] md:text-[13px] font-medium px-1.5 py-1.5 rounded transition-colors"
           >
             <LogIn size={14} />
             <span className="hidden sm:inline">Login</span>
@@ -385,7 +385,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <div className="bg-gradient-to-br from-[#2b98e1] via-[#2b98e1] to-blue-900 px-6 py-10 text-center">
+      <div className="bg-gradient-to-br from-[#34b6d8] via-[#243c5a] to-[#243c5a] px-6 py-10 text-center">
         <p className="text-blue-200 text-[11px] tracking-widest uppercase mb-2">
           {dateLabel}
         </p>
@@ -783,9 +783,23 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-gray-300 pb-4">
-          © {new Date().getFullYear()} School Management System · Mahachuni
-        </p>
+        <div className="text-center pb-4">
+  <p className="text-[12px] text-gray-500">
+    © {new Date().getFullYear()} School Management System · Mahachuni
+  </p>
+  
+  <p className="text-[12px] text-gray-500 mt-1">
+    Developed by{" "}
+    <Link 
+      href="https://sempatech.com" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      className="text-sky-500 hover:text-[#2b98e1] transition-colors hover:underline decoration-gray-500 hover:decoration-[#2b98e1]"
+    >
+      Sempa Tech
+    </Link>
+  </p>
+</div>
       </div>
     </div>
   );

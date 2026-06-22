@@ -45,14 +45,26 @@ export function DashboardHeader({ userName, primaryColor }: DashboardHeaderProps
       </div>
 
       {/* Right: Admission Button */}
-      <Link href="/student-admissions">
-        <button
-          style={{ backgroundColor: primaryColor }}
-          className="flex items-center gap-2 px-4 cursor-pointer py-2 text-white text-sm font-semibold rounded-md shadow-sm hover:opacity-90 transition-opacity"
-        >
-          <span>Admission</span>
-        </button>
-      </Link>
+     {/* Right: Admission Button and Website Link */}
+      <div className="flex items-center gap-4">
+        
+        <Link 
+    href="/" 
+    className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors z-10 cursor-pointer"
+  >
+    View Website
+  </Link>
+
+        {/* Admission Button */}
+        <Link href="/student-admissions">
+          <button
+            style={{ backgroundColor: primaryColor }}
+            className="flex items-center gap-2 px-4 cursor-pointer py-2 text-white text-sm font-semibold rounded-md shadow-sm hover:opacity-90 transition-opacity"
+          >
+            <span>Admission</span>
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }

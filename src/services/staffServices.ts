@@ -6,6 +6,11 @@ let staffRequestHandle: Promise<any> | null = null;
 let staffDashboardCache: any = null;
 let staffDashboardRequestHandle: Promise<any> | null = null;
 
+
+let leaveSummaryCache: any = null;
+let leaveSummaryRequestHandle: Promise<any> | null = null;
+
+
 export const StaffServices = {
   clearCache: () => {
     staffCache = null;
@@ -76,4 +81,26 @@ export const StaffServices = {
     staffCache = null;
     return res.data;
   },
+
+
+  getLeaveSummary: async () => {
+    if (leaveSummaryCache) return leaveSummaryCache;
+
+    if (leaveSummaryRequestHandle) return leaveSummaryRequestHandle;
+
+    leaveSummaryRequestHandle = (async () => {
+      try {
+        const res = await axiosInstance.get("/leave-allocation/my_leave_summary/");
+        leaveSummaryCache = res.data;
+        return res.data;
+      } catch (error) {
+        throw error;
+      } finally {
+        leaveSummaryRequestHandle = null;
+      }
+    })();
+
+    return leaveSummaryRequestHandle;
+  },
+
 };

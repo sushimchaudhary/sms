@@ -66,7 +66,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Public routes that never require a token
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/public/staff-attendance', '/public/leave-allocations'];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;

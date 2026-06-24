@@ -113,6 +113,7 @@ import { createContext, useState, useEffect, ReactNode, useCallback } from "reac
 import { type IAuthContext, type IUser, type ICredentials } from "../../types/authType";
 import Cookies from "js-cookie";
 import axiosInstance from "../config/axios.config";
+import Image from "next/image";
 
 const AuthContext = createContext<IAuthContext>({
   login: async () => {},
@@ -250,7 +251,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {loading ? (
-        <div className="flex items-center justify-center h-screen">Loading..</div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="relative flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full overflow-hidden border border-slate-200 shadow-sm relative z-10">
+            <Image src="/edify.png" alt="Loading..." width={80} height={80} className="w-full h-full object-cover" />
+          </div>
+          <div className="absolute w-24 h-24 border-4 border-transparent border-t-[#2b98e1] rounded-full animate-spin" />
+        </div>
+      </div>    
       ) : (
         children
       )}

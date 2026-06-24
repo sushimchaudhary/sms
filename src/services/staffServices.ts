@@ -83,24 +83,6 @@ export const StaffServices = {
   },
 
 
-  getLeaveSummary: async () => {
-    if (leaveSummaryCache) return leaveSummaryCache;
-
-    if (leaveSummaryRequestHandle) return leaveSummaryRequestHandle;
-
-    leaveSummaryRequestHandle = (async () => {
-      try {
-        const res = await axiosInstance.get("/leave-allocation/my_leave_summary/");
-        leaveSummaryCache = res.data;
-        return res.data;
-      } catch (error) {
-        throw error;
-      } finally {
-        leaveSummaryRequestHandle = null;
-      }
-    })();
-
-    return leaveSummaryRequestHandle;
-  },
+ 
 
 };

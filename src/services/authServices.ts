@@ -105,4 +105,9 @@ export const UserServices = {
     userCache = null;
     return res.data;
   },
+
+  getEligibleApplicants: async () => {
+    const res = await axiosInstance.get("/auth/users/");
+    return res.data;
+  },
 };

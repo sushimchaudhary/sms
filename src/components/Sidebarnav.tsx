@@ -98,6 +98,15 @@ const SUPERADMIN_GROUPS: MenuGroup[] = [
       { icon: School,          labelKey: "nav.school",    href: "/school" },
       { icon: User,            labelKey: "nav.user",      href: "/user-management" },
       { icon: Calendar,        labelKey: "nav.academicCalendar", href: "/academic-calendar" },
+      // {
+      //   icon: CalendarDays,
+      //   labelKey: "nav.leaveManagement",
+      //   href: "#",
+      //   submenu: [
+      //     { labelKey: "nav.leaveAllocation",  href: "/leave-allocation",  icon: User },
+      //     { labelKey: "nav.leaveApplication", href: "/leave-application", icon: CalendarDays },
+      //   ],
+      // },
     ],
   },
 ];

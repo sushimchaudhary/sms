@@ -300,7 +300,7 @@ export default function LoginPage() {
         },
       }}
     >
-      <div className="bg-[#f5f6fa] p-4">
+      <div>
 
         <div className="py-4 w-full flex items-center justify-center">
           <div className="w-full max-w-[400] bg-white rounded shadow-lg border border-gray-100 overflow-hidden">
